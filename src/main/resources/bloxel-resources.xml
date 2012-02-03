@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources xmlns="http://www.bloxel.de/bloxel-resources">
+	<texture-atlas image="texture/minecraft.png" atlas-size="512" image-size="32">
+		<texture texture-x="0" texture-y="15" id="grass" />
+		<texture texture-x="1" texture-y="15" id="stone" />
+		<texture texture-x="2" texture-y="15" id="dirt-side" />
+		<texture texture-x="3" texture-y="15" id="dirt-grass-side" />
+		<texture texture-x="0" texture-y="14" id="stone-wall-side" />
+		<texture texture-x="1" texture-y="14" id="dirt-dark" />
+		<texture texture-x="2" texture-y="14" id="sand" />
+		<texture texture-x="3" texture-y="14" id="dirt-light" />
+	</texture-atlas>
+</resources>

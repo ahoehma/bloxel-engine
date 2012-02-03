@@ -16,134 +16,100 @@
  *******************************************************************************/
 package de.bloxel.engine.material;
 
-import static java.lang.String.format;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
 import java.util.Set;
 
-import org.apache.log4j.Logger;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+
 import org.springframework.core.io.ClassPathResource;
 
-import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.io.Closeables;
 import com.jme3.asset.AssetManager;
 import com.jme3.asset.plugins.ClasspathLocator;
+import com.jme3.cinematic.events.MotionTrack.Direction;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState.BlendMode;
 import com.jme3.material.RenderState.FaceCullMode;
 import com.jme3.math.Vector2f;
-import com.jme3.texture.Texture;
+
+import de.bloxel.engine.resources.TextureAtlasProvider;
+import de.bloxel.engine.types.Face;
+import de.bloxel.engine.types.Type;
+import de.bloxel.engine.types.Types;
 
 /**
+ * This {@link BloxelAssetManager} return {@link Material textured material} for bloxel types.
+ * 
  * @author Andreas Höhmann
  * @since 1.0.0
  */
 public class ImageAtlasBloxelAssetManager implements BloxelAssetManager {
 
-  private static class UVMapKey extends ArrayList<Object> {
-    private static final long serialVersionUID = 1L;
-
-    public UVMapKey(final Integer bloxelType, final int face) {
+  @SuppressWarnings("serial")
+  private static class Key extends ArrayList<Object> {
+    public Key(final Integer bloxelType, final Direction direction) {
       add(bloxelType);
-      add(face);
+      add(direction);
     }
   }
 
-  private static final Logger LOG = Logger.getLogger(ImageAtlasBloxelAssetManager.class);
-  private static final String UVMAP_PROPERTIES = "uvmap.properties";
   private static final String TEXTURE = "texture/";
 
-  private static final int FACE_RIGHT = 1;
-  private static final int FACE_LEFT = 2;
-  private static final int FACE_UP = 4;
-  private static final int FACE_DOWN = 8;
-  private static final int FACE_FRONT = 16;
-  private static final int FACE_BACK = 32;
-
-  private static int faceOf(final String face) {
-    if (face.equalsIgnoreCase("up")) {
-      return FACE_UP;
-    }
-    if (face.equalsIgnoreCase("down")) {
-      return FACE_DOWN;
-    }
-    if (face.equalsIgnoreCase("front")) {
-      return FACE_FRONT;
-    }
-    if (face.equalsIgnoreCase("back")) {
-      return FACE_BACK;
-    }
-    if (face.equalsIgnoreCase("left")) {
-      return FACE_LEFT;
-    }
-    if (face.equalsIgnoreCase("right")) {
-      return FACE_RIGHT;
-    }
-    throw new IllegalArgumentException("Unkown face " + face);
-  }
-
+  private final TextureAtlasProvider atlasProvider;
   private final Set<Integer> types = Sets.newHashSet();
-  private final Map<UVMapKey, Vector2f> uvmap = Maps.newHashMap();
+  private final Map<Key, Vector2f> uvmap = Maps.newHashMap();
   private final Material bloxelMaterial;
   private final Material bloxelMaterialTransparent;
   private boolean wireframe;
-
-  private static final Set<Integer> TRANSPARENT_BOXELS = Sets.newHashSet(6);
 
   /**
    * @param theAssetManager
    *          for loading textures etc.
    */
   public ImageAtlasBloxelAssetManager(final AssetManager theAssetManager) {
-    try {
-      final Properties p = new Properties();
-      p.load(new ClassPathResource(UVMAP_PROPERTIES).getInputStream());
-      final Set<Entry<Object, Object>> definitions = p.entrySet();
-      for (final Entry<Object, Object> d : definitions) {
-        final Integer bloxelType = Integer.valueOf(d.getKey().toString());
-        final String value = String.format("%s", d.getValue());
-        final Iterable<String> bloxelProperties = Splitter.on(";").split(value);
-        for (final String s : bloxelProperties) {
-          final String face = s.split(":")[0];
-          final String coord = s.split(":")[1];
-          final float x = Float.valueOf(coord.split(",")[0]);
-          final float y = Float.valueOf(coord.split(",")[1]);
-          uvmap.put(new UVMapKey(bloxelType, faceOf(face)), new Vector2f(x, y));
-          types.add(bloxelType);
-        }
+    theAssetManager.registerLocator("/de/bloxel/engine/resources/", ClasspathLocator.class);
+    atlasProvider = new TextureAtlasProvider(theAssetManager);
+    for (final Type t : load().getType()) {
+      for (final de.bloxel.engine.types.Texture te : t.getTexture()) {
+        final Face face = te.getFace();
+        final String textureId = te.getTextureId();
+        checkNotNull(atlasProvider.getTexture(textureId));
       }
-    } catch (final IOException e) {
-      throw new RuntimeException(format("Can't load bloxel definition file '%s' from classpath", UVMAP_PROPERTIES), e);
+      for (final Face f : t.getFace()) {
+        uvmap.put(new Key(t.getId(), f.getDirection()), new Vector2f(f.getTextureX(), f.getTextureY()));
+      }
+      types.add(t.getId());
     }
 
-    theAssetManager.registerLocator("/de/bloxel/engine/material/", ClasspathLocator.class);
-
-    final Texture texture = theAssetManager.loadTexture(TEXTURE + "minecraft.png");
-    final Texture normalMap = theAssetManager.loadTexture(TEXTURE + "minecraft_normal.png");
-    final Texture lightMap = theAssetManager.loadTexture(TEXTURE + "lightmap.png");
-
-    bloxelMaterial = new Material(theAssetManager, "Common/MatDefs/Light/Lighting.j3md");
-    bloxelMaterial.setTexture("DiffuseMap", texture);
+    bloxelMaterial = new Material(theAssetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+    // bloxelMaterial.setTexture("DiffuseMap", texture);
+    bloxelMaterial.setTexture("ColorMap", texture);
     // bloxelMaterial.setTexture("NormalMap", normalMap);
-    bloxelMaterial.setTexture("LightMap", lightMap);
+    // bloxelMaterial.setTexture("LightMap", lightMap);
     bloxelMaterial.setBoolean("SeparateTexCoord", true);
-    bloxelMaterial.setBoolean("VertexLighting", true); // need to avoid shader error! "missing vNormal" ?!
+    // bloxelMaterial.setBoolean("VertexLighting", true); // need to avoid shader error! "missing vNormal" ?!
     bloxelMaterial.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Back);
     // bloxelMaterial.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
 
-    bloxelMaterialTransparent = new Material(theAssetManager, "Common/MatDefs/Light/Lighting.j3md");
-    bloxelMaterialTransparent.setTexture("DiffuseMap", texture);
+    bloxelMaterialTransparent = new Material(theAssetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+    // bloxelMaterialTransparent.setTexture("DiffuseMap", texture);
+    bloxelMaterialTransparent.setTexture("ColorMap", texture);
     // bloxelMaterialTransparent.setTexture("NormalMap", normalMap);
-    bloxelMaterialTransparent.setTexture("LightMap", lightMap);
+    // bloxelMaterialTransparent.setTexture("LightMap", lightMap);
     bloxelMaterialTransparent.setBoolean("SeparateTexCoord", true);
-    bloxelMaterialTransparent.setBoolean("VertexLighting", true);
+    // bloxelMaterialTransparent.setBoolean("VertexLighting", true);
     bloxelMaterialTransparent.setTransparent(true);
     bloxelMaterialTransparent.getAdditionalRenderState().setBlendMode(BlendMode.Alpha);
     // bloxelMaterialTransparent.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
@@ -160,24 +126,42 @@ public class ImageAtlasBloxelAssetManager implements BloxelAssetManager {
 
   @Override
   public Material getMaterial(final Integer bloxelType) {
-    if (isTransparent(bloxelType)) {
-      return bloxelMaterialTransparent;
-    }
-    return bloxelMaterial;
+
   }
 
   @Override
   public List<Vector2f> getTextureCoordinates(final Integer bloxelType, final int face) {
-    return uvMapTexture(uvmap.get(new UVMapKey(bloxelType, face)));
+    return uvMapTexture(uvmap.get(new Key(bloxelType)));
   }
 
   @Override
   public boolean isTransparent(final Integer bloxelType) {
-    return TRANSPARENT_BOXELS.contains(bloxelType);
+    return false;
   }
 
   public boolean isWireframe() {
     return wireframe;
+  }
+
+  protected Types load() {
+    InputStream inputStream = null;
+    try {
+      inputStream = new ClassPathResource("bloxel.xml").getInputStream();
+    } catch (final IOException e) {
+    }
+    try {
+      // http://jaxb.java.net/faq/index.html#classloader
+      final JAXBContext jc = JAXBContext.newInstance(Types.class.getPackage().getName(), getClass().getClassLoader());
+      final Unmarshaller unmarshaller = jc.createUnmarshaller();
+      // http://jaxb.java.net/guide/Unmarshalling_is_not_working__Help_.html
+      unmarshaller.setEventHandler(new javax.xml.bind.helpers.DefaultValidationEventHandler());
+      final JAXBElement<Types> unmarshal = (JAXBElement<Types>) unmarshaller.unmarshal(inputStream);
+      return unmarshal.getValue();
+    } catch (final JAXBException e) {
+    } finally {
+      Closeables.closeQuietly(inputStream);
+    }
+    return null;
   }
 
   public void setWireframe(final boolean wireframe) {
@@ -206,4 +190,5 @@ public class ImageAtlasBloxelAssetManager implements BloxelAssetManager {
     final Vector2f topRight = new Vector2f(x + s, y + s);
     return Lists.newArrayList(bottomLeft, bottomRight, topLeft, topRight);
   }
+
 }

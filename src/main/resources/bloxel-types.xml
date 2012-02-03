@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<types xmlns="http://www.bloxel.de/bloxel-types">
+	<type id="0">
+		<texture face="up" texture-id="grass" />
+		<texture face="down" texture-id="dirt-dark" />
+	</type>
+</types>

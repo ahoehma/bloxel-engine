@@ -1,0 +1,8 @@
+<!DOCTYPE suite SYSTEM "http://beust.com/testng/testng-1.0.dtd" >
+<suite name="bloxel" verbose="0" object-factory="org.powermock.modules.testng.PowerMockObjectFactory">
+  <test name="resources">
+    <packages>
+      <package name="de.bloxel.engine.resources" />
+    </packages>
+  </test>
+</suite>

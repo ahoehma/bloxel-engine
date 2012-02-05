@@ -16,24 +16,22 @@
  *******************************************************************************/
 package de.bloxel.engine.resources;
 
+import static com.google.common.collect.Lists.newArrayList;
+import static com.google.common.io.Closeables.closeQuietly;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
-
 import org.springframework.core.io.ClassPathResource;
 
 import com.beust.jcommander.internal.Maps;
-import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
 import com.jme3.asset.AssetManager;
 import com.jme3.math.Vector2f;
 import com.jme3.texture.Texture;
+
+import de.bloxel.engine.util.JAXBUtils;
 
 /**
  * @author Andreas Höhmann
@@ -54,43 +52,43 @@ public class TextureAtlasProvider {
       for (final de.bloxel.engine.resources.Texture t : ta.getTexture()) {
         textures.put(t.getId(), texture);
         textureCoordinates.put(t.getId(),
-            uvMapTexture(ta.getAtlasSize(), ta.getImageSize(), t.getTextureX(), t.getTextureY()));
+            uvMapTexture(ta.getAtlasSize(), ta.getImageSize(), t.getTextureColum(), t.getTextureRow()));
       }
     }
   }
 
-  public Texture getTexture(final String id) {
-    return textures.get(id);
+  public Texture getTexture(final String textureId) {
+    return textures.get(textureId);
   }
 
-  public List<Vector2f> getTextureCoordinates(final String id) {
-    return textureCoordinates.get(id);
+  public List<Vector2f> getTextureCoordinates(final String textureId) {
+    return textureCoordinates.get(textureId);
   }
 
   protected Resources load() {
     InputStream inputStream = null;
     try {
-      inputStream = new ClassPathResource("resources.xml").getInputStream();
+      inputStream = new ClassPathResource("bloxel-resources.xml").getInputStream();
+      return JAXBUtils.unmarschal(inputStream, Resources.class);
     } catch (final IOException e) {
-      throw new RuntimeException("Can't load resources.xml", e);
-    }
-    try {
-      // http://jaxb.java.net/faq/index.html#classloader
-      final JAXBContext jc = JAXBContext.newInstance(Resources.class.getPackage().getName(), getClass()
-          .getClassLoader());
-      final Unmarshaller unmarshaller = jc.createUnmarshaller();
-      // http://jaxb.java.net/guide/Unmarshalling_is_not_working__Help_.html
-      unmarshaller.setEventHandler(new javax.xml.bind.helpers.DefaultValidationEventHandler());
-      final JAXBElement<Resources> unmarshal = (JAXBElement<Resources>) unmarshaller.unmarshal(inputStream);
-      return unmarshal.getValue();
-    } catch (final JAXBException e) {
-      throw new RuntimeException("Can't load resources.xml", e);
+      throw new RuntimeException("Can't load bloxel-resources.xml", e);
     } finally {
-      Closeables.closeQuietly(inputStream);
+      closeQuietly(inputStream);
     }
   }
 
-  private List<Vector2f> uvMapTexture(final int atlasSize, final int imageSize, final int col, final int row) {
+  /**
+   * @param atlasSize
+   *          size of the whole atlas image in pixel
+   * @param imageSize
+   *          size of each tile image in pixel
+   * @param col
+   *          horizontal position of the texture tile starting with <code>0</code>
+   * @param row
+   *          vertical position of the texture tile starting with <code>0</code>
+   * @return
+   */
+  private List<Vector2f> uvMapTexture(final float atlasSize, final float imageSize, final int col, final int row) {
     final float s = imageSize / atlasSize;
     final float x = col * s;
     final float y = row * s;
@@ -98,6 +96,6 @@ public class TextureAtlasProvider {
     final Vector2f bottomRight = new Vector2f(x + s, y);
     final Vector2f topLeft = new Vector2f(x, y + s);
     final Vector2f topRight = new Vector2f(x + s, y + s);
-    return Lists.newArrayList(bottomLeft, bottomRight, topLeft, topRight);
+    return newArrayList(bottomLeft, bottomRight, topLeft, topRight);
   }
 }

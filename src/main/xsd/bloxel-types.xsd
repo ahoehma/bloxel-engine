@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns="http://www.bloxel.de/bloxel-types" targetNamespace="http://www.bloxel.de/bloxel-types"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+  <xsd:annotation>
+    <xsd:documentation>
+      <![CDATA[
+       Copyright (c) 2012 Andreas Höhmann
+ 
+       All rights reserved. Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+    
+         http://www.apache.org/licenses/LICENSE-2.0
+   
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+      ]]>
+    </xsd:documentation>
+  </xsd:annotation>
+
+  <xsd:element name="types" type="types" />
+
+  <xsd:complexType name="types">
+    <xsd:sequence maxOccurs="unbounded">
+      <xsd:element name="type" type="type" minOccurs="0" maxOccurs="unbounded" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="type">
+    <xsd:sequence maxOccurs="unbounded">
+      <xsd:element name="face" type="face" minOccurs="0" maxOccurs="unbounded" />
+    </xsd:sequence>
+    <xsd:attribute name="id" type="xsd:int" use="required" />
+    <xsd:attribute name="transparent" type="xsd:boolean" default="false" />
+  </xsd:complexType>
+
+  <xsd:simpleType name="faceType">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="up" />
+      <xsd:enumeration value="down" />
+      <xsd:enumeration value="left" />
+      <xsd:enumeration value="right" />
+      <xsd:enumeration value="back" />
+      <xsd:enumeration value="front" />
+      <xsd:enumeration value="sides">
+        <xsd:annotation>
+          <xsd:documentation>Special face type to define a texture for all sides (left, right, front and back)
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="all">
+        <xsd:annotation>
+          <xsd:documentation>Special face type to define a texture for all face (left, right, front, back, up and down)
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:enumeration>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <xsd:complexType name="face">
+    <xsd:attribute name="texture-id" type="xsd:string" use="required">
+      <xsd:annotation>
+        <xsd:documentation>Define the texture which should be used to use for this face. 
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="face-type" type="faceType" use="required" />
+  </xsd:complexType>
+
+</xsd:schema>

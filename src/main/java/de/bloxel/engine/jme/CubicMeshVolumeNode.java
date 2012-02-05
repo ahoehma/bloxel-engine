@@ -41,16 +41,9 @@ import de.bloxel.engine.material.BloxelAssetManager;
  * @author Andreas Höhmann
  * @since 1.0.0
  */
-public class CustomMeshVolumeNode extends AbstractVolumeNode {
+public class CubicMeshVolumeNode extends AbstractVolumeNode {
 
-  private static final Logger LOG = Logger.getLogger(CustomMeshVolumeNode.class);
-
-  private static final Vector3f NORMAL_UP = new Vector3f(0, 1, 0);
-  private static final Vector3f NORMAL_DOWN = new Vector3f(0, -1, 0);
-  private static final Vector3f NORMAL_RIGHT = new Vector3f(1, 0, 0);
-  private static final Vector3f NORMAL_LEFT = new Vector3f(-1, 0, 0);
-  private static final Vector3f NORMAL_FRONT = new Vector3f(0, 0, 1);
-  private static final Vector3f NORMAL_BACK = new Vector3f(0, 0, -1);
+  private static final Logger LOG = Logger.getLogger(CubicMeshVolumeNode.class);
 
   private static final ArrayList<Vector3f> NORMALS_DOWNFACE = newArrayList(NORMAL_DOWN, NORMAL_DOWN, NORMAL_DOWN,
       NORMAL_DOWN);
@@ -93,10 +86,9 @@ public class CustomMeshVolumeNode extends AbstractVolumeNode {
   private final Multimap<Integer, Vector3f> vertices = ArrayListMultimap.create();
   private final Multimap<Integer, Vector3f> normals = ArrayListMultimap.create();
   private final Multimap<Integer, Vector2f> textureCoord = ArrayListMultimap.create();
-  private final Multimap<Integer, Vector2f> lightTextureCoord = ArrayListMultimap.create();
   private final Multimap<Integer, Integer> indexes = ArrayListMultimap.create();
 
-  public CustomMeshVolumeNode(final VolumeGrid<Bloxel> grid, final Volume<Bloxel> volume,
+  public CubicMeshVolumeNode(final VolumeGrid<Bloxel> grid, final Volume<Bloxel> volume,
       final BloxelAssetManager assetManager) {
     super(grid, volume, assetManager);
   }
@@ -143,7 +135,6 @@ public class CustomMeshVolumeNode extends AbstractVolumeNode {
     normals.clear();
     textureCoord.clear();
     indexes.clear();
-    lightTextureCoord.clear();
   }
 
   private boolean createFaces(final VolumeGrid<Bloxel> grid, final Volume<Bloxel> volume, final Bloxel data,
@@ -181,19 +172,6 @@ public class CustomMeshVolumeNode extends AbstractVolumeNode {
     final Vector3f pf = new Vector3f(wx + scale, wy - scale, wz - scale);
     final Vector3f pg = new Vector3f(wx - scale, wy + scale, wz - scale);
     final Vector3f ph = new Vector3f(wx + scale, wy + scale, wz - scale);
-    // TODO calculate light value depending on the position of the bloxel and the neighbors
-    final List<Vector2f> lightMapCoord = lightTextureCoord(9);
-    // final LightList worldLightList = getWorldLightList();
-    // worldLightList.iterator();
-    // for (final Light light : worldLightList) {
-    // switch (light.getType()) {
-    // case Directional:
-    // final DirectionalLight l = (DirectionalLight) light;
-    // break;
-    // default:
-    // break;
-    // }
-    // }
     boolean materialUsed = false;
     if ((faces & FACE_BACK) > 0) {
       final int verticesSize = vertices.get(bloxelType).size();
@@ -201,7 +179,6 @@ public class CustomMeshVolumeNode extends AbstractVolumeNode {
       normals.get(bloxelType).addAll(NORMALS_BACKFACE);
       textureCoord.get(bloxelType).addAll(assetManager.getTextureCoordinates(bloxelType, FACE_BACK));
       indexes.get(bloxelType).addAll(verticesIndex(verticesSize, TRIANGLE_INDIZES));
-      lightTextureCoord.get(bloxelType).addAll(lightMapCoord);
       materialUsed = true;
     }
     if ((faces & FACE_FRONT) > 0) {
@@ -210,7 +187,6 @@ public class CustomMeshVolumeNode extends AbstractVolumeNode {
       normals.get(bloxelType).addAll(NORMALS_FRONTFACE);
       textureCoord.get(bloxelType).addAll(assetManager.getTextureCoordinates(bloxelType, FACE_FRONT));
       indexes.get(bloxelType).addAll(verticesIndex(verticesSize, TRIANGLE_INDIZES));
-      lightTextureCoord.get(bloxelType).addAll(lightMapCoord);
       materialUsed = true;
     }
     if ((faces & FACE_RIGHT) > 0) {
@@ -219,7 +195,6 @@ public class CustomMeshVolumeNode extends AbstractVolumeNode {
       normals.get(bloxelType).addAll(NORMALS_RIGHTFACE);
       textureCoord.get(bloxelType).addAll(assetManager.getTextureCoordinates(bloxelType, FACE_RIGHT));
       indexes.get(bloxelType).addAll(verticesIndex(verticesSize, TRIANGLE_INDIZES));
-      lightTextureCoord.get(bloxelType).addAll(lightMapCoord);
       materialUsed = true;
     }
     if ((faces & FACE_LEFT) > 0) {
@@ -228,7 +203,6 @@ public class CustomMeshVolumeNode extends AbstractVolumeNode {
       normals.get(bloxelType).addAll(NORMALS_LEFTFACE);
       textureCoord.get(bloxelType).addAll(assetManager.getTextureCoordinates(bloxelType, FACE_LEFT));
       indexes.get(bloxelType).addAll(verticesIndex(verticesSize, TRIANGLE_INDIZES));
-      lightTextureCoord.get(bloxelType).addAll(lightMapCoord);
       materialUsed = true;
     }
     if ((faces & FACE_UP) > 0) {
@@ -237,7 +211,6 @@ public class CustomMeshVolumeNode extends AbstractVolumeNode {
       normals.get(bloxelType).addAll(NORMALS_UPFACE);
       textureCoord.get(bloxelType).addAll(assetManager.getTextureCoordinates(bloxelType, FACE_UP));
       indexes.get(bloxelType).addAll(verticesIndex(verticesSize, TRIANGLE_INDIZES));
-      lightTextureCoord.get(bloxelType).addAll(lightMapCoord);
       materialUsed = true;
     }
     if ((faces & FACE_DOWN) > 0) {
@@ -246,7 +219,6 @@ public class CustomMeshVolumeNode extends AbstractVolumeNode {
       normals.get(bloxelType).addAll(NORMALS_DOWNFACE);
       textureCoord.get(bloxelType).addAll(assetManager.getTextureCoordinates(bloxelType, FACE_DOWN));
       indexes.get(bloxelType).addAll(verticesIndex(verticesSize, TRIANGLE_INDIZES));
-      lightTextureCoord.get(bloxelType).addAll(lightMapCoord);
       materialUsed = true;
     }
     return materialUsed;
@@ -287,10 +259,6 @@ public class CustomMeshVolumeNode extends AbstractVolumeNode {
       LOG.debug("Material " + bloxelType + " have " + textureCoord.get(bloxelType).size() + " texCoord");
       mesh.setBuffer(Index, 1, createIntBuffer(toPrimitive(indexes.get(bloxelType).toArray(new Integer[0]))));
       LOG.debug("Material " + bloxelType + " have " + indexes.get(bloxelType).size() + " indexes");
-      // chunkMesh.setBuffer(Type.TexCoord2, 2,
-      // BufferUtils.createFloatBuffer(lightCoord.get(bloxelType).toArray(new Vector2f[lightCoord.size()])));
-      // LOG.debug("Material " + bloxelType + " have " + lightCoord.get(bloxelType).size() + " lightCoord");
-      // important to update the bound for correct node-world-bound-calculation
       mesh.updateBound();
       if (mesh.getVertexCount() != 0) {
         final Material material = assetManager.getMaterial(bloxelType);

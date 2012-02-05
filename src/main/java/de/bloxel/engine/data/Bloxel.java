@@ -16,6 +16,8 @@
  *******************************************************************************/
 package de.bloxel.engine.data;
 
+import static java.lang.String.format;
+
 /**
  * The smallest volume information in the bloxel engine.
  * 
@@ -27,9 +29,19 @@ public class Bloxel {
   public static final Bloxel AIR = new Bloxel(-1);
 
   private final int type;
+  private final float density;
 
   public Bloxel(final int type) {
+    this(type, 0);
+  }
+
+  public Bloxel(final int type, final float density) {
     this.type = type;
+    this.density = density;
+  }
+
+  public float getDensity() {
+    return density;
   }
 
   public int getType() {
@@ -38,6 +50,6 @@ public class Bloxel {
 
   @Override
   public String toString() {
-    return String.format("type: %s", type);
+    return format("type: %s, density: %f", type, density);
   }
 }

@@ -5,13 +5,16 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import com.google.common.collect.Lists;
+import com.jme3.math.Vector3f;
+import com.jme3.renderer.queue.RenderQueue.Bucket;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
-import com.jme3.scene.Spatial;
+import com.jme3.scene.debug.WireBox;
 
 import de.bloxel.engine.data.Bloxel;
 import de.bloxel.engine.data.Volume;
 import de.bloxel.engine.data.VolumeGrid;
+import de.bloxel.engine.material.BloxelAssetManager;
 
 /**
  * @author Andreas Höhmann
@@ -23,16 +26,28 @@ public abstract class AbstractVolumeNode extends Node implements VolumeNode {
     DIRTY, CALCULATED, UP2DATE
   }
 
+  static final Vector3f NORMAL_UP = new Vector3f(0, 1, 0);
+  static final Vector3f NORMAL_DOWN = new Vector3f(0, -1, 0);
+  static final Vector3f NORMAL_RIGHT = new Vector3f(1, 0, 0);
+  static final Vector3f NORMAL_LEFT = new Vector3f(-1, 0, 0);
+  static final Vector3f NORMAL_FRONT = new Vector3f(0, 0, 1);
+  static final Vector3f NORMAL_BACK = new Vector3f(0, 0, -1);
+
   private static final Logger LOG = Logger.getLogger(AbstractVolumeNode.class);
 
   private final Volume<Bloxel> volume;
   private final VolumeGrid<Bloxel> grid;
-  private final List<Spatial> geometries = Lists.newArrayList();
+  private final List<Geometry> geometries = Lists.newArrayList();
   private State state;
 
-  AbstractVolumeNode(final VolumeGrid<Bloxel> grid, final Volume<Bloxel> volume) {
+  protected final BloxelAssetManager assetManager;
+
+  AbstractVolumeNode(final VolumeGrid<Bloxel> grid, final Volume<Bloxel> volume, final BloxelAssetManager assetManager) {
+    super();
+    attachChild(new Node("volume"));
     this.grid = grid;
     this.volume = volume;
+    this.assetManager = assetManager;
     this.state = State.DIRTY;
   }
 
@@ -63,6 +78,24 @@ public abstract class AbstractVolumeNode extends Node implements VolumeNode {
    */
   abstract List<Geometry> createGeometries(VolumeGrid<Bloxel> grid, Volume<Bloxel> volume);
 
+  public void debug(final boolean b) {
+    detachChildNamed("debug");
+    if (b) {
+      final Geometry debug = GeometryBuilder.geometry("debug")
+          .mesh(new WireBox(volume.getSizeX() / 2, volume.getSizeY() / 2, volume.getSizeZ() / 2))
+          .material(assetManager.getMaterial(-1, null)).get();
+      debug.setQueueBucket(Bucket.Opaque);
+      attachChild(debug);
+      for (final Geometry g : geometries) {
+        g.getMaterial().getAdditionalRenderState().setWireframe(true);
+      }
+    } else {
+      for (final Geometry g : geometries) {
+        g.getMaterial().getAdditionalRenderState().setWireframe(false);
+      }
+    }
+  }
+
   /**
    * Update the geometries if necessary.
    */
@@ -73,9 +106,9 @@ public abstract class AbstractVolumeNode extends Node implements VolumeNode {
     }
     LOG.debug(String.format("Update geometries for '%s'", this));
     final long startTime = System.currentTimeMillis();
-    detachAllChildren();
-    for (final Spatial spatial : geometries) {
-      attachChild(spatial);
+    ((Node) getChild("volume")).detachAllChildren();
+    for (final Geometry g : geometries) {
+      ((Node) getChild("volume")).attachChild(g);
     }
     state = State.UP2DATE;
     final float duration = System.currentTimeMillis() - startTime;

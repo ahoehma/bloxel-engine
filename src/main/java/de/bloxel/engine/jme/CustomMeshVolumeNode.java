@@ -96,12 +96,9 @@ public class CustomMeshVolumeNode extends AbstractVolumeNode {
   private final Multimap<Integer, Vector2f> lightTextureCoord = ArrayListMultimap.create();
   private final Multimap<Integer, Integer> indexes = ArrayListMultimap.create();
 
-  private final BloxelAssetManager assetManager;
-
   public CustomMeshVolumeNode(final VolumeGrid<Bloxel> grid, final Volume<Bloxel> volume,
       final BloxelAssetManager assetManager) {
-    super(grid, volume);
-    this.assetManager = assetManager;
+    super(grid, volume, assetManager);
   }
 
   /**

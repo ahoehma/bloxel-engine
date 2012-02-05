@@ -19,6 +19,7 @@ package de.bloxel.engine.data;
 import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Objects.toStringHelper;
 import static com.google.common.collect.Lists.newArrayList;
+import static java.lang.String.format;
 
 import java.util.List;
 
@@ -83,7 +84,7 @@ public class ColtVolume<T> implements Volume<T> {
     Preconditions.checkArgument(z >= 0);
     Preconditions.checkArgument(x < sizeX);
     Preconditions.checkArgument(y < sizeY);
-    Preconditions.checkArgument(z < sizeZ);
+    Preconditions.checkArgument(z < sizeZ, format("error: %d < %d", z, sizeZ));
     return (T) firstNonNull(matrix3d.get(x, y, z), Bloxel.AIR);
   }
 

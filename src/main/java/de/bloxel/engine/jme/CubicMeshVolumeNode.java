@@ -1,7 +1,6 @@
 package de.bloxel.engine.jme;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static com.jme3.renderer.queue.RenderQueue.Bucket.Transparent;
 import static com.jme3.scene.VertexBuffer.Type.Index;
 import static com.jme3.scene.VertexBuffer.Type.Normal;
 import static com.jme3.scene.VertexBuffer.Type.Position;
@@ -27,6 +26,8 @@ import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
+import com.jme3.renderer.queue.RenderQueue;
+import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 
@@ -145,10 +146,9 @@ public class CubicMeshVolumeNode extends AbstractVolumeNode {
     if ((faces & FACE_NO) > 0) {
       return false;
     }
-    final float scale = 0.5f;
-    final float wx = volume.getX() + x;
-    final float wy = volume.getY() + y;
-    final float wz = volume.getZ() + z;
+    final float wx = x;
+    final float wy = y;
+    final float wz = z;
     final int bloxelType = data.getType();
     /**
      * <pre>
@@ -166,14 +166,14 @@ public class CubicMeshVolumeNode extends AbstractVolumeNode {
      * 
      * </pre>
      */
-    final Vector3f pa = new Vector3f(wx - scale, wy - scale, wz + scale);
-    final Vector3f pb = new Vector3f(wx + scale, wy - scale, wz + scale);
-    final Vector3f pc = new Vector3f(wx - scale, wy + scale, wz + scale);
-    final Vector3f pd = new Vector3f(wx + scale, wy + scale, wz + scale);
-    final Vector3f pe = new Vector3f(wx - scale, wy - scale, wz - scale);
-    final Vector3f pf = new Vector3f(wx + scale, wy - scale, wz - scale);
-    final Vector3f pg = new Vector3f(wx - scale, wy + scale, wz - scale);
-    final Vector3f ph = new Vector3f(wx + scale, wy + scale, wz - scale);
+    final Vector3f pa = new Vector3f(wx, wy, wz + 1);
+    final Vector3f pb = new Vector3f(wx + 1, wy, wz + 1);
+    final Vector3f pc = new Vector3f(wx, wy + 1, wz + 1);
+    final Vector3f pd = new Vector3f(wx + 1, wy + 1, wz + 1);
+    final Vector3f pe = new Vector3f(wx, wy, wz);
+    final Vector3f pf = new Vector3f(wx + 1, wy, wz);
+    final Vector3f pg = new Vector3f(wx, wy + 1, wz);
+    final Vector3f ph = new Vector3f(wx + 1, wy + 1, wz);
     boolean materialUsed = false;
     if ((faces & FACE_BACK) > 0) {
       final int verticesSize = vertices.get(bloxelType).size();
@@ -262,13 +262,18 @@ public class CubicMeshVolumeNode extends AbstractVolumeNode {
       mesh.setBuffer(Index, 1, createIntBuffer(toPrimitive(indexes.get(bloxelType).toArray(new Integer[0]))));
       LOG.debug("Material " + bloxelType + " have " + indexes.get(bloxelType).size() + " indexes");
       mesh.updateBound();
+      mesh.updateCounts();
       if (mesh.getVertexCount() != 0) {
         final Material material = bloxelAssetManager.getMaterial(bloxelType, BloxelSide.DOWN);
-        LOG.debug(material);
         final Geometry geometry = geometry("bloxel-" + bloxelType).mesh(mesh).material(material).get();
+        geometry.setQueueBucket(RenderQueue.Bucket.Opaque);
+        geometry.setShadowMode(ShadowMode.CastAndReceive);
         if (material.isTransparent()) {
-          geometry.setQueueBucket(Transparent);
+          geometry.setQueueBucket(RenderQueue.Bucket.Transparent);
+          // geometry.setQueueBucket(RenderQueue.Bucket.Translucent);
+          // geometry.setShadowMode(ShadowMode.Off);
         }
+        geometry.setLocalTranslation(new Vector3f(volume.getX(), volume.getY(), volume.getZ()));
         result.add(geometry);
       }
     }

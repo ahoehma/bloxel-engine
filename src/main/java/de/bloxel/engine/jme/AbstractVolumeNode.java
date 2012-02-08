@@ -9,6 +9,7 @@ import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.queue.RenderQueue.Bucket;
+import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.debug.WireBox;
@@ -86,18 +87,15 @@ public abstract class AbstractVolumeNode extends Node implements VolumeNode {
   public void debug(final boolean b) {
     detachChildNamed("debug");
     if (b) {
-      final Geometry debug = GeometryBuilder.geometry("debug")
-          .mesh(new WireBox(volume.getSizeX() / 2, volume.getSizeY() / 2, volume.getSizeZ() / 2))
+      final float sizeX = volume.getSizeX() / 2;
+      final float sizeY = volume.getSizeY() / 2;
+      final float sizeZ = volume.getSizeZ() / 2;
+      final Geometry debug = GeometryBuilder.geometry("debug").mesh(new WireBox(sizeX, sizeY, sizeZ))
           .material(new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md")).get();
-      debug.setQueueBucket(Bucket.Opaque);
+      debug.setQueueBucket(Bucket.Translucent);
+      debug.setShadowMode(ShadowMode.Off);
+      debug.setLocalTranslation(new Vector3f(volume.getX() + sizeX, volume.getY() + sizeY, volume.getZ() + sizeZ));
       attachChild(debug);
-      for (final Geometry g : geometries) {
-        g.getMaterial().getAdditionalRenderState().setWireframe(true);
-      }
-    } else {
-      for (final Geometry g : geometries) {
-        g.getMaterial().getAdditionalRenderState().setWireframe(false);
-      }
     }
   }
 

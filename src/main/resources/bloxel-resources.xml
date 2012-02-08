@@ -13,5 +13,6 @@
 		<texture texture-colum="2" texture-row="11" id="snow" />
 		<texture texture-colum="13" texture-row="3" id="water" />
 		<texture texture-colum="13" texture-row="1" id="lava" />
+		<texture texture-colum="3" texture-row="11" id="glass" />
 	</texture-atlas>
 </resources>

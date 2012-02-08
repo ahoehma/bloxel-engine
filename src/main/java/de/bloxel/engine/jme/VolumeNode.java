@@ -10,8 +10,8 @@ import de.bloxel.engine.data.Volume;
  * 
  * A {@link VolumeNode}S must use the {@link #calculate() calculation method} to create {@link Geometry geometries} for
  * his volume information, i.e. using boxes, tesselation. If this method return <code>true</code> then later the
- * "world manager" will call the {@link #update(Vector3f, Vector3f)} method in the render loop to update the scene
- * graph. The calculation can be done in a parallel thread.
+ * "world manager" will call the {@link #update()} method in the render loop to update the scene graph. The calculation
+ * can be done in a parallel thread.
  * 
  * @author Andreas Höhmann
  * @since 1.0.0
@@ -27,4 +27,6 @@ public interface VolumeNode {
    *         <code>false</code>
    */
   boolean calculate();
+
+  boolean update();
 }

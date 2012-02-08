@@ -18,6 +18,7 @@ package de.bloxel.engine.material;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.io.Closeables.closeQuietly;
+import static de.bloxel.engine.util.JAXBUtils.unmarschal;
 import static java.lang.String.format;
 
 import java.io.IOException;
@@ -29,7 +30,6 @@ import org.apache.log4j.Logger;
 import org.springframework.core.io.ClassPathResource;
 import org.testng.collections.Sets;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.jme3.asset.AssetManager;
@@ -45,7 +45,6 @@ import de.bloxel.engine.types.BloxelType;
 import de.bloxel.engine.types.Side;
 import de.bloxel.engine.types.SideType;
 import de.bloxel.engine.types.Types;
-import de.bloxel.engine.util.JAXBUtils;
 
 /**
  * This {@link BloxelAssetManager} return {@link Material textured material} for bloxel types.
@@ -63,6 +62,7 @@ public class ImageAtlasBloxelAssetManager implements BloxelAssetManager {
   private final Set<Integer> transparent = Sets.newHashSet();
   private final TextureAtlasProvider atlasProvider;
   private final AssetManager assetManager;
+  private boolean lighting;
 
   /**
    * @param assetManager
@@ -72,51 +72,29 @@ public class ImageAtlasBloxelAssetManager implements BloxelAssetManager {
     this.assetManager = assetManager;
     this.assetManager.registerLocator("/de/bloxel/engine/resources/", ClasspathLocator.class);
     this.atlasProvider = new TextureAtlasProvider(assetManager);
-    for (final BloxelType b : load().getBloxel()) {
-      for (final Side side : b.getSide()) {
-        bloxel.put(b.getId(), b);
-        final String sideTextureId = side.getTextureId();
-        final Texture texture = this.atlasProvider.getTexture(sideTextureId);
-        checkNotNull(texture,
-            format("Missing texture with id '%s' for bloxel '%d', side '%s'", sideTextureId, b.getId(), side.getType()));
-        final Material material = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
-        material.setTexture("DiffuseMap", texture);
-        material.setBoolean("SeparateTexCoord", true);
-        material.setBoolean("VertexLighting", true); // need to avoid shader error! "missing vNormal" ?!
-        material.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Back);
-        if (b.isTransparent()) {
-          transparent.add(b.getId());
-          material.setTransparent(true);
-          material.getAdditionalRenderState().setBlendMode(BlendMode.Alpha);
-        }
-        // final Material material = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        // material.setTexture("ColorMap", texture);
-        bloxelMaterial.put(b.getId(), material);
-        sideTextureMaterial.put(sideTextureId, material);
-      }
-    }
+    loadMaterials();
   }
 
   @Override
-  public Material getMaterial(final Integer bloxelType, final BloxelSide face) {
-    Preconditions.checkNotNull(bloxelType);
-    if (face == null) {
+  public Material getMaterial(final Integer bloxelType, final BloxelSide side) {
+    checkNotNull(bloxelType);
+    if (side == null) {
       return bloxelMaterial.get(bloxelType);
     }
-    return sideTextureMaterial.get(getTextureId(bloxelType, face));
+    return sideTextureMaterial.get(getTextureId(bloxelType, side));
   }
 
   @Override
-  public ImmutableList<Vector2f> getTextureCoordinates(final Integer bloxelType, final BloxelSide face) {
-    Preconditions.checkNotNull(bloxelType);
-    Preconditions.checkNotNull(face);
-    return atlasProvider.getTextureCoordinates(checkNotNull(getTextureId(bloxelType, face),
-        format("no texture id for type '%d', side '%s'", bloxelType, face)));
+  public ImmutableList<Vector2f> getTextureCoordinates(final Integer bloxelType, final BloxelSide side) {
+    checkNotNull(bloxelType);
+    checkNotNull(side);
+    return atlasProvider.getTextureCoordinates(checkNotNull(getTextureId(bloxelType, side),
+        format("no texture id for type '%d', side '%s'", bloxelType, side)));
   }
 
   String getTextureId(final Integer id, final BloxelSide face) {
-    Preconditions.checkNotNull(id);
-    Preconditions.checkNotNull(face);
+    checkNotNull(id);
+    checkNotNull(face);
     String result = null;
     for (final Side f : checkNotNull(bloxel.get(id), format("Unknown bloxel id '%d'", id)).getSide()) {
       if (f.getType() == SideType.UP && face == BloxelSide.UP) {
@@ -156,11 +134,57 @@ public class ImageAtlasBloxelAssetManager implements BloxelAssetManager {
     InputStream inputStream = null;
     try {
       inputStream = new ClassPathResource("bloxel-types.xml").getInputStream();
-      return JAXBUtils.unmarschal(inputStream, Types.class);
+      return unmarschal(inputStream, Types.class);
     } catch (final IOException e) {
       throw new RuntimeException("Can't load bloxel-types.xml", e);
     } finally {
       closeQuietly(inputStream);
+    }
+  }
+
+  private Material loadMaterial(final Texture texture) {
+    if (lighting) {
+      final Material material = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+      material.setTexture("DiffuseMap", texture);
+      material.setBoolean("SeparateTexCoord", true);
+      // material.setBoolean("VertexLighting", true); // need to avoid shader error! "missing vNormal" ?!
+      material.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Back);
+      return material;
+    }
+    final Material material = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+    material.setTexture("ColorMap", texture);
+    material.setBoolean("SeparateTexCoord", true);
+    return material;
+  }
+
+  private void loadMaterials() {
+    bloxel.clear();
+    bloxelMaterial.clear();
+    sideTextureMaterial.clear();
+    transparent.clear();
+    for (final BloxelType b : load().getBloxel()) {
+      for (final Side side : b.getSide()) {
+        bloxel.put(b.getId(), b);
+        final String sideTextureId = side.getTextureId();
+        final Texture texture = this.atlasProvider.getTexture(sideTextureId);
+        checkNotNull(texture,
+            format("Missing texture with id '%s' for bloxel '%d', side '%s'", sideTextureId, b.getId(), side.getType()));
+        final Material material = loadMaterial(texture);
+        if (b.isTransparent()) {
+          transparent.add(b.getId());
+          material.setTransparent(true);
+          material.getAdditionalRenderState().setBlendMode(BlendMode.Alpha);
+        }
+        bloxelMaterial.put(b.getId(), material);
+        sideTextureMaterial.put(sideTextureId, material);
+      }
+    }
+  }
+
+  public void setLightning(final boolean lightning) {
+    if (lightning != this.lighting) {
+      this.lighting = lightning;
+      loadMaterials();
     }
   }
 }

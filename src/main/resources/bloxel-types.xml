@@ -48,12 +48,20 @@
     <side type="front" texture-id="water" />
     <side type="back" texture-id="water" />
   </bloxel>
-  <bloxel id="7" title="lava" liquid="true" transparent="true" penetrable="true" hardness="0.7">
+  <bloxel id="7" title="lava" liquid="true" transparent="false" penetrable="true" hardness="0.7">
     <side type="up" texture-id="lava" />
     <side type="down" texture-id="lava" />
     <side type="left" texture-id="lava" />
     <side type="right" texture-id="lava" />
     <side type="front" texture-id="lava" />
     <side type="back" texture-id="lava" />
+  </bloxel>
+  <bloxel id="8" title="glass" transparent="true">
+    <side type="up" texture-id="glass" />
+    <side type="down" texture-id="glass" />
+    <side type="left" texture-id="glass" />
+    <side type="right" texture-id="glass" />
+    <side type="front" texture-id="glass" />
+    <side type="back" texture-id="glass" />
   </bloxel>
 </types>

@@ -18,6 +18,7 @@ package de.bloxel.engine.material;
 
 import static com.google.common.collect.ImmutableList.of;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
@@ -58,6 +59,8 @@ public class ImageAtlasBloxelAssetManagerTest {
     assertEquals(imageAtlasProvider.getTextureCoordinates(1, BloxelSide.UP),
         of(new Vector2f(0, 0.9375f), new Vector2f(0.0625f, 0.9375f), new Vector2f(0, 1), new Vector2f(0.0625f, 1)));
     assertTrue(imageAtlasProvider.isTransparent(6));
-    assertTrue(imageAtlasProvider.isTransparent(7));
+    assertFalse(imageAtlasProvider.isTransparent(7));
+    assertTrue(imageAtlasProvider.getMaterial(6, null).isTransparent());
+    assertTrue(imageAtlasProvider.getMaterial(6, BloxelSide.UP).isTransparent());
   }
 }

@@ -5,6 +5,8 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import com.google.common.collect.Lists;
+import com.jme3.asset.AssetManager;
+import com.jme3.material.Material;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.queue.RenderQueue.Bucket;
 import com.jme3.scene.Geometry;
@@ -40,14 +42,17 @@ public abstract class AbstractVolumeNode extends Node implements VolumeNode {
   private final List<Geometry> geometries = Lists.newArrayList();
   private State state;
 
-  protected final BloxelAssetManager assetManager;
+  protected final BloxelAssetManager bloxelAssetManager;
+  private final AssetManager assetManager;
 
-  AbstractVolumeNode(final VolumeGrid<Bloxel> grid, final Volume<Bloxel> volume, final BloxelAssetManager assetManager) {
+  AbstractVolumeNode(final VolumeGrid<Bloxel> grid, final Volume<Bloxel> volume, final AssetManager assetManager,
+      final BloxelAssetManager bloxelAssetManager) {
     super();
     attachChild(new Node("volume"));
     this.grid = grid;
     this.volume = volume;
     this.assetManager = assetManager;
+    this.bloxelAssetManager = bloxelAssetManager;
     this.state = State.DIRTY;
   }
 
@@ -83,7 +88,7 @@ public abstract class AbstractVolumeNode extends Node implements VolumeNode {
     if (b) {
       final Geometry debug = GeometryBuilder.geometry("debug")
           .mesh(new WireBox(volume.getSizeX() / 2, volume.getSizeY() / 2, volume.getSizeZ() / 2))
-          .material(assetManager.getMaterial(null, null)).get();
+          .material(new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md")).get();
       debug.setQueueBucket(Bucket.Opaque);
       attachChild(debug);
       for (final Geometry g : geometries) {

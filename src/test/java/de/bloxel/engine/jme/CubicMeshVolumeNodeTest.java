@@ -28,7 +28,6 @@ import com.jme3.math.FastMath;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
-import com.jme3.shadow.PssmShadowRenderer;
 
 import de.bloxel.engine.data.Bloxel;
 import de.bloxel.engine.data.ColtVolumeFactory;
@@ -52,7 +51,6 @@ public class CubicMeshVolumeNodeTest extends SimpleApplication implements Action
   private ImageAtlasBloxelAssetManager bloxelAssetManager;
   private SpotLight spot;
   private Vector2f screenCenter;
-  private PssmShadowRenderer pssmRenderer;
 
   private void addMapping(final String name, final Trigger trigger) {
     getInputManager().addMapping(name, trigger);
@@ -122,14 +120,6 @@ public class CubicMeshVolumeNodeTest extends SimpleApplication implements Action
     cam.setFrustumFar(1000f);
     flyCam.setMoveSpeed(50);
     flyCam.setEnabled(true);
-    // pssmRenderer = new PssmShadowRenderer(assetManager, 512, 1);
-    // pssmRenderer.setLambda(0.55f);
-    // pssmRenderer.setShadowIntensity(0.2f);
-    // pssmRenderer.setCompareMode(CompareMode.Hardware);
-    // pssmRenderer.setFilterMode(FilterMode.Bilinear);
-    // pssmRenderer.setDirection(new Vector3f(-1, -1, -1).normalizeLocal());
-    // pssmRenderer.displayDebug();
-    // viewPort.addProcessor(pssmRenderer);
     addMapping("lightning", new KeyTrigger(KeyInput.KEY_L));
     addMapping("smooth", new KeyTrigger(KeyInput.KEY_2));
     addMapping("debug", new KeyTrigger(KeyInput.KEY_SPACE));

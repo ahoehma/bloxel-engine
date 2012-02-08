@@ -25,20 +25,44 @@
   <xsd:element name="types" type="types" />
 
   <xsd:complexType name="types">
+    <xsd:annotation>
+      <xsd:documentation>
+        This element would be used to define all possible types of bloxels for the engine.
+      </xsd:documentation>
+    </xsd:annotation>
     <xsd:sequence maxOccurs="unbounded">
-      <xsd:element name="type" type="type" minOccurs="0" maxOccurs="unbounded" />
+      <xsd:element name="bloxel" type="bloxelType" minOccurs="0" maxOccurs="unbounded" />
     </xsd:sequence>
   </xsd:complexType>
 
-  <xsd:complexType name="type">
+  <xsd:complexType name="bloxelType">
+    <xsd:annotation>
+      <xsd:documentation>
+        A bloxel is one piece of the bloxel world.
+      </xsd:documentation>
+    </xsd:annotation>
     <xsd:sequence maxOccurs="unbounded">
-      <xsd:element name="face" type="face" minOccurs="0" maxOccurs="unbounded" />
+      <xsd:element name="side" type="side" minOccurs="0" maxOccurs="unbounded" />
     </xsd:sequence>
     <xsd:attribute name="id" type="xsd:int" use="required" />
+    <xsd:attribute name="title" type="xsd:string" />
     <xsd:attribute name="transparent" type="xsd:boolean" default="false" />
+    <xsd:attribute name="liquid" type="xsd:boolean" default="false" />
+    <xsd:attribute name="penetrable" type="xsd:boolean" default="false" /> 
+    <xsd:attribute name="hardness" type="xsd:float" default="1.0"/> 
   </xsd:complexType>
 
-  <xsd:simpleType name="faceType">
+  <xsd:complexType name="side">
+    <xsd:attribute name="texture-id" type="xsd:string" use="required">
+      <xsd:annotation>
+        <xsd:documentation>Define the texture which should be used to use for this face. 
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="type" type="sideType" use="required" />
+  </xsd:complexType>
+  
+  <xsd:simpleType name="sideType">
     <xsd:restriction base="xsd:string">
       <xsd:enumeration value="up" />
       <xsd:enumeration value="down" />
@@ -46,29 +70,8 @@
       <xsd:enumeration value="right" />
       <xsd:enumeration value="back" />
       <xsd:enumeration value="front" />
-      <xsd:enumeration value="sides">
-        <xsd:annotation>
-          <xsd:documentation>Special face type to define a texture for all sides (left, right, front and back)
-          </xsd:documentation>
-        </xsd:annotation>
-      </xsd:enumeration>
-      <xsd:enumeration value="all">
-        <xsd:annotation>
-          <xsd:documentation>Special face type to define a texture for all face (left, right, front, back, up and down)
-          </xsd:documentation>
-        </xsd:annotation>
-      </xsd:enumeration>
     </xsd:restriction>
   </xsd:simpleType>
 
-  <xsd:complexType name="face">
-    <xsd:attribute name="texture-id" type="xsd:string" use="required">
-      <xsd:annotation>
-        <xsd:documentation>Define the texture which should be used to use for this face. 
-        </xsd:documentation>
-      </xsd:annotation>
-    </xsd:attribute>
-    <xsd:attribute name="face-type" type="faceType" use="required" />
-  </xsd:complexType>
 
 </xsd:schema>

@@ -16,20 +16,19 @@
  *******************************************************************************/
 package de.bloxel.engine.resources;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.io.Closeables.closeQuietly;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
 import org.springframework.core.io.ClassPathResource;
 
 import com.beust.jcommander.internal.Maps;
+import com.google.common.collect.ImmutableList;
 import com.jme3.asset.AssetManager;
 import com.jme3.math.Vector2f;
-import com.jme3.texture.Texture;
 
 import de.bloxel.engine.util.JAXBUtils;
 
@@ -39,8 +38,10 @@ import de.bloxel.engine.util.JAXBUtils;
  */
 public class TextureAtlasProvider {
 
-  private final Map<String, List<Vector2f>> textureCoordinates = Maps.newHashMap();
-  private final Map<String, Texture> textures = Maps.newHashMap();
+  private static final Logger LOG = Logger.getLogger(TextureAtlasProvider.class);
+
+  private final Map<String, ImmutableList<Vector2f>> textureCoordinates = Maps.newHashMap();
+  private final Map<String, com.jme3.texture.Texture> textures = Maps.newHashMap();
 
   /**
    * @param theAssetManager
@@ -48,20 +49,20 @@ public class TextureAtlasProvider {
    */
   public TextureAtlasProvider(final AssetManager theAssetManager) {
     for (final TextureAtlas ta : load().getTextureAtlas()) {
-      final Texture texture = theAssetManager.loadTexture(ta.getImage());
-      for (final de.bloxel.engine.resources.Texture t : ta.getTexture()) {
-        textures.put(t.getId(), texture);
+      for (final Texture t : ta.getTexture()) {
+        textures.put(t.getId(), theAssetManager.loadTexture(ta.getImage()));
         textureCoordinates.put(t.getId(),
             uvMapTexture(ta.getAtlasSize(), ta.getImageSize(), t.getTextureColum(), t.getTextureRow()));
       }
     }
+    LOG.info(String.format("Load %d textures '%s'", textures.size(), textures));
   }
 
-  public Texture getTexture(final String textureId) {
+  public com.jme3.texture.Texture getTexture(final String textureId) {
     return textures.get(textureId);
   }
 
-  public List<Vector2f> getTextureCoordinates(final String textureId) {
+  public ImmutableList<Vector2f> getTextureCoordinates(final String textureId) {
     return textureCoordinates.get(textureId);
   }
 
@@ -88,7 +89,8 @@ public class TextureAtlasProvider {
    *          vertical position of the texture tile starting with <code>0</code>
    * @return
    */
-  private List<Vector2f> uvMapTexture(final float atlasSize, final float imageSize, final int col, final int row) {
+  private ImmutableList<Vector2f> uvMapTexture(final float atlasSize, final float imageSize, final int col,
+      final int row) {
     final float s = imageSize / atlasSize;
     final float x = col * s;
     final float y = row * s;
@@ -96,6 +98,6 @@ public class TextureAtlasProvider {
     final Vector2f bottomRight = new Vector2f(x + s, y);
     final Vector2f topLeft = new Vector2f(x, y + s);
     final Vector2f topRight = new Vector2f(x + s, y + s);
-    return newArrayList(bottomLeft, bottomRight, topLeft, topRight);
+    return ImmutableList.of(bottomLeft, bottomRight, topLeft, topRight);
   }
 }

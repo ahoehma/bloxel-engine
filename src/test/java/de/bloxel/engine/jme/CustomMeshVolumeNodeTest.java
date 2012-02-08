@@ -80,13 +80,14 @@ public class CustomMeshVolumeNodeTest extends SimpleApplication {
     grid.setVolumeLoader(new DummyLoader());
     grid.setVolumeFactory(new ColtVolumeFactory<Bloxel>());
     grid.init();
-    for (int z = -1; z < 1; z++) {
-      for (int x = -1; x < 1; x++) {
-        for (int y = -1; y < 1; y++) {
-          rootNode.attachChild(node(grid, x, y, z));
-        }
-      }
-    }
+    // for (int z = -1; z < 1; z++) {
+    // for (int x = -1; x < 1; x++) {
+    // for (int y = -1; y < 1; y++) {
+    // rootNode.attachChild(node(grid, x, y, z));
+    // }
+    // }
+    // }
+    rootNode.attachChild(node(grid, 0, 0, 0));
 
     cam.setLocation(Vector3f.ZERO);
     cam.setFrustumFar(3000f);

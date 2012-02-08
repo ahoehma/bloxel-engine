@@ -42,16 +42,9 @@ import de.bloxel.engine.material.BloxelAssetManager.BloxelSide;
  * @author Andreas Höhmann
  * @since 1.0.0
  */
-public class CustomMeshVolumeNode extends AbstractVolumeNode {
+public class CubicMeshVolumeNode extends AbstractVolumeNode {
 
-  private static final Logger LOG = Logger.getLogger(CustomMeshVolumeNode.class);
-
-  private static final Vector3f NORMAL_UP = new Vector3f(0, 1, 0);
-  private static final Vector3f NORMAL_DOWN = new Vector3f(0, -1, 0);
-  private static final Vector3f NORMAL_RIGHT = new Vector3f(1, 0, 0);
-  private static final Vector3f NORMAL_LEFT = new Vector3f(-1, 0, 0);
-  private static final Vector3f NORMAL_FRONT = new Vector3f(0, 0, 1);
-  private static final Vector3f NORMAL_BACK = new Vector3f(0, 0, -1);
+  private static final Logger LOG = Logger.getLogger(CubicMeshVolumeNode.class);
 
   private static final ArrayList<Vector3f> NORMALS_DOWNFACE = newArrayList(NORMAL_DOWN, NORMAL_DOWN, NORMAL_DOWN,
       NORMAL_DOWN);
@@ -96,7 +89,7 @@ public class CustomMeshVolumeNode extends AbstractVolumeNode {
   private final Multimap<Integer, Vector2f> textureCoord = ArrayListMultimap.create();
   private final Multimap<Integer, Integer> indexes = ArrayListMultimap.create();
 
-  public CustomMeshVolumeNode(final VolumeGrid<Bloxel> grid, final Volume<Bloxel> volume,
+  public CubicMeshVolumeNode(final VolumeGrid<Bloxel> grid, final Volume<Bloxel> volume,
       final BloxelAssetManager assetManager) {
     super(grid, volume, assetManager);
   }
@@ -247,6 +240,7 @@ public class CustomMeshVolumeNode extends AbstractVolumeNode {
             continue;
           }
           if (createFaces(grid, volume, data, x, y, z)) {
+            LOG.debug(String.format("Tesselated volume data %s", data));
             c++;
             usedBloxeTypes.add(data.getType());
           }
@@ -269,7 +263,8 @@ public class CustomMeshVolumeNode extends AbstractVolumeNode {
       LOG.debug("Material " + bloxelType + " have " + indexes.get(bloxelType).size() + " indexes");
       mesh.updateBound();
       if (mesh.getVertexCount() != 0) {
-        final Material material = assetManager.getMaterial(bloxelType, null);
+        final Material material = assetManager.getMaterial(bloxelType, BloxelSide.DOWN);
+        LOG.debug(material);
         final Geometry geometry = geometry("bloxel-" + bloxelType).mesh(mesh).material(material).get();
         if (material.isTransparent()) {
           geometry.setQueueBucket(Transparent);
@@ -310,21 +305,6 @@ public class CustomMeshVolumeNode extends AbstractVolumeNode {
 
   private boolean isTranslucentBloxel(final Integer bloxelType) {
     return assetManager.isTransparent(bloxelType);
-  }
-
-  private List<Vector2f> lightTextureCoord(final int lightValue) {
-    // each image is 32x32, the whole image-atlas is 512x512
-    // coord.x: 0..10
-    // coord.y: 0..1
-    final float sx = 32f / 512f;
-    final float sy = 32f / 64f;
-    final float x = lightValue * sx;
-    final float y = sy;
-    final Vector2f bottomLeft = new Vector2f(x, y);
-    final Vector2f bottomRight = new Vector2f(x + sx, y);
-    final Vector2f topLeft = new Vector2f(x, y + sy);
-    final Vector2f topRight = new Vector2f(x + sx, y + sy);
-    return Lists.newArrayList(bottomLeft, bottomRight, topLeft, topRight);
   }
 
   private boolean needFace(final Bloxel currentBloxel, final Bloxel neighborBloxelToCheck) {

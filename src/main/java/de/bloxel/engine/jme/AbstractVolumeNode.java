@@ -83,7 +83,7 @@ public abstract class AbstractVolumeNode extends Node implements VolumeNode {
     if (b) {
       final Geometry debug = GeometryBuilder.geometry("debug")
           .mesh(new WireBox(volume.getSizeX() / 2, volume.getSizeY() / 2, volume.getSizeZ() / 2))
-          .material(assetManager.getMaterial(-1, null)).get();
+          .material(assetManager.getMaterial(null, null)).get();
       debug.setQueueBucket(Bucket.Opaque);
       attachChild(debug);
       for (final Geometry g : geometries) {

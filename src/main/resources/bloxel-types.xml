@@ -1,7 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <types xmlns="http://www.bloxel.de/bloxel-types">
-  <type id="0">
-    <face face-type="up" texture-id="grass" />
-    <face face-type="down" texture-id="dirt-dark" />
-  </type>
+  <bloxel id="1" title="grass">
+    <side type="up" texture-id="grass" />
+    <side type="down" texture-id="dirt-dark" />
+    <side type="left" texture-id="dirt-grass-side" />
+    <side type="right" texture-id="dirt-grass-side" />
+    <side type="front" texture-id="dirt-grass-side" />
+    <side type="back" texture-id="dirt-grass-side" />
+  </bloxel>
+  <bloxel id="2" title="sand">
+    <side type="up" texture-id="sand" />
+    <side type="down" texture-id="sand" />
+    <side type="left" texture-id="sand" />
+    <side type="right" texture-id="sand" />
+    <side type="front" texture-id="sand" />
+    <side type="back" texture-id="sand" />
+  </bloxel>
+   <bloxel id="3" title="grass-snow">
+    <side type="up" texture-id="snow" />
+    <side type="down" texture-id="dirt-dark" />
+    <side type="left" texture-id="grass-snow-side" />
+    <side type="right" texture-id="grass-snow-side" />
+    <side type="front" texture-id="grass-snow-side" />
+    <side type="back" texture-id="grass-snow-side" />
+  </bloxel>
+  <bloxel id="4" title="stone">
+    <side type="up" texture-id="stone" />
+    <side type="down" texture-id="stone" />
+    <side type="left" texture-id="stone" />
+    <side type="right" texture-id="stone" />
+    <side type="front" texture-id="stone" />
+    <side type="back" texture-id="stone" />
+  </bloxel>
+  <bloxel id="5" title="dirt">
+    <side type="up" texture-id="dirt-dark" />
+    <side type="down" texture-id="dirt-dark" />
+    <side type="left" texture-id="dirt-dark" />
+    <side type="right" texture-id="dirt-dark" />
+    <side type="front" texture-id="dirt-dark" />
+    <side type="back" texture-id="dirt-dark" />
+  </bloxel>
+  <bloxel id="6" title="water" liquid="true" transparent="true" penetrable="true" hardness="0.3">
+    <side type="up" texture-id="water" />
+    <side type="down" texture-id="water" />
+    <side type="left" texture-id="water" />
+    <side type="right" texture-id="water" />
+    <side type="front" texture-id="water" />
+    <side type="back" texture-id="water" />
+  </bloxel>
+  <bloxel id="7" title="lava" liquid="true" transparent="true" penetrable="true" hardness="0.7">
+    <side type="up" texture-id="lava" />
+    <side type="down" texture-id="lava" />
+    <side type="left" texture-id="lava" />
+    <side type="right" texture-id="lava" />
+    <side type="front" texture-id="lava" />
+    <side type="back" texture-id="lava" />
+  </bloxel>
 </types>

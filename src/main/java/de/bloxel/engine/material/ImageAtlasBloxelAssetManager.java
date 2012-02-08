@@ -22,24 +22,28 @@ import static java.lang.String.format;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.log4j.Logger;
 import org.springframework.core.io.ClassPathResource;
+import org.testng.collections.Sets;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.jme3.asset.AssetManager;
 import com.jme3.asset.plugins.ClasspathLocator;
 import com.jme3.material.Material;
+import com.jme3.material.RenderState.BlendMode;
 import com.jme3.material.RenderState.FaceCullMode;
 import com.jme3.math.Vector2f;
 import com.jme3.texture.Texture;
 
 import de.bloxel.engine.resources.TextureAtlasProvider;
-import de.bloxel.engine.types.Face;
-import de.bloxel.engine.types.FaceType;
-import de.bloxel.engine.types.Type;
+import de.bloxel.engine.types.BloxelType;
+import de.bloxel.engine.types.Side;
+import de.bloxel.engine.types.SideType;
 import de.bloxel.engine.types.Types;
 import de.bloxel.engine.util.JAXBUtils;
 
@@ -51,9 +55,13 @@ import de.bloxel.engine.util.JAXBUtils;
  */
 public class ImageAtlasBloxelAssetManager implements BloxelAssetManager {
 
+  private static final Logger LOG = Logger.getLogger(ImageAtlasBloxelAssetManager.class);
+
+  private final Map<String, Material> sideTextureMaterial = Maps.newHashMap();
+  private final Map<Integer, Material> bloxelMaterial = Maps.newHashMap();
+  private final Map<Integer, BloxelType> bloxel = Maps.newHashMap();
+  private final Set<Integer> transparent = Sets.newHashSet();
   private final TextureAtlasProvider atlasProvider;
-  private final Map<String, Material> texturMaterial = Maps.newHashMap();
-  private final Map<Integer, Type> types = Maps.newHashMap();
   private final AssetManager assetManager;
 
   /**
@@ -64,63 +72,75 @@ public class ImageAtlasBloxelAssetManager implements BloxelAssetManager {
     this.assetManager = assetManager;
     this.assetManager.registerLocator("/de/bloxel/engine/resources/", ClasspathLocator.class);
     this.atlasProvider = new TextureAtlasProvider(assetManager);
-    for (final Type t : load().getType()) {
-      for (final Face f : t.getFace()) {
-        final String textureId = f.getTextureId();
-        final Texture texture = this.atlasProvider.getTexture(textureId);
+    for (final BloxelType b : load().getBloxel()) {
+      for (final Side side : b.getSide()) {
+        bloxel.put(b.getId(), b);
+        final String sideTextureId = side.getTextureId();
+        final Texture texture = this.atlasProvider.getTexture(sideTextureId);
         checkNotNull(texture,
-            format("Missing texture '%s' for type '%d', face '%s'", textureId, t.getId(), f.getFaceType()));
-        addMaterial(textureId, texture);
+            format("Missing texture with id '%s' for bloxel '%d', side '%s'", sideTextureId, b.getId(), side.getType()));
+        final Material material = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+        material.setTexture("DiffuseMap", texture);
+        material.setBoolean("SeparateTexCoord", true);
+        material.setBoolean("VertexLighting", true); // need to avoid shader error! "missing vNormal" ?!
+        material.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Back);
+        if (b.isTransparent()) {
+          transparent.add(b.getId());
+          material.setTransparent(true);
+          material.getAdditionalRenderState().setBlendMode(BlendMode.Alpha);
+        }
+        // final Material material = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        // material.setTexture("ColorMap", texture);
+        bloxelMaterial.put(b.getId(), material);
+        sideTextureMaterial.put(sideTextureId, material);
       }
-      types.put(t.getId(), t);
     }
-  }
-
-  private void addMaterial(final String textureId, final Texture texture) {
-    if (texturMaterial.containsKey(textureId)) {
-      return;
-    }
-    final Material material = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-    material.setTexture("ColorMap", texture);
-    material.setBoolean("SeparateTexCoord", true);
-    material.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Back);
-    texturMaterial.put(textureId, material);
   }
 
   @Override
-  public Material getMaterial(final Integer bloxelType, final BloxelFace face) {
+  public Material getMaterial(final Integer bloxelType, final BloxelSide face) {
+    Preconditions.checkNotNull(bloxelType);
+    if (face == null) {
+      return bloxelMaterial.get(bloxelType);
+    }
+    return sideTextureMaterial.get(getTextureId(bloxelType, face));
+  }
+
+  @Override
+  public ImmutableList<Vector2f> getTextureCoordinates(final Integer bloxelType, final BloxelSide face) {
     Preconditions.checkNotNull(bloxelType);
     Preconditions.checkNotNull(face);
-    Material result = null;
-    for (final Face f : types.get(bloxelType).getFace()) {
-      if (f.getFaceType() == FaceType.ALL) {
-        result = texturMaterial.get(f.getTextureId());
-      }
-      if (f.getFaceType() == FaceType.SIDES && face != FACE.UP && face != BloxelFace.DOWN) {
-        result = texturMaterial.get(f.getTextureId());
-      }
-      if (f.getFaceType() == FaceType.UP && face != FACE.UP) {
-        result = texturMaterial.get(f.getTextureId());
+    return atlasProvider.getTextureCoordinates(checkNotNull(getTextureId(bloxelType, face),
+        format("no texture id for type '%d', side '%s'", bloxelType, face)));
+  }
+
+  String getTextureId(final Integer id, final BloxelSide face) {
+    Preconditions.checkNotNull(id);
+    Preconditions.checkNotNull(face);
+    String result = null;
+    for (final Side f : checkNotNull(bloxel.get(id), format("Unknown bloxel id '%d'", id)).getSide()) {
+      if (f.getType() == SideType.UP && face == BloxelSide.UP) {
+        result = f.getTextureId();
         break;
       }
-      if (f.getFaceType() == FaceType.DOWN && face != FACE.DOWN) {
-        result = texturMaterial.get(f.getTextureId());
+      if (f.getType() == SideType.DOWN && face == BloxelSide.DOWN) {
+        result = f.getTextureId();
         break;
       }
-      if (f.getFaceType() == FaceType.LEFT && face != FACE.LEFT) {
-        result = texturMaterial.get(f.getTextureId());
+      if (f.getType() == SideType.LEFT && face == BloxelSide.LEFT) {
+        result = f.getTextureId();
         break;
       }
-      if (f.getFaceType() == FaceType.RIGHT && face != FACE.RIGHT) {
-        result = texturMaterial.get(f.getTextureId());
+      if (f.getType() == SideType.RIGHT && face == BloxelSide.RIGHT) {
+        result = f.getTextureId();
         break;
       }
-      if (f.getFaceType() == FaceType.BACK && face != FACE.BACK) {
-        result = texturMaterial.get(f.getTextureId());
+      if (f.getType() == SideType.BACK && face == BloxelSide.BACK) {
+        result = f.getTextureId();
         break;
       }
-      if (f.getFaceType() == FaceType.FRONT && face != FACE.FRONT) {
-        result = texturMaterial.get(f.getTextureId());
+      if (f.getType() == SideType.FRONT && face == BloxelSide.FRONT) {
+        result = f.getTextureId();
         break;
       }
     }
@@ -128,21 +148,8 @@ public class ImageAtlasBloxelAssetManager implements BloxelAssetManager {
   }
 
   @Override
-  public List<Vector2f> getTextureCoordinates(final Integer bloxelType, final BloxelFace face) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public List<Vector2f> getTextureCoordinates(final Integer bloxelType, final FACE face) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
   public boolean isTransparent(final Integer bloxelType) {
-    // TODO Auto-generated method stub
-    return false;
+    return transparent.contains(bloxelType);
   }
 
   protected Types load() {

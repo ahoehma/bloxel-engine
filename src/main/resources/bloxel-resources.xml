@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <resources xmlns="http://www.bloxel.de/bloxel-resources">
 	<texture-atlas image="texture/minecraft.png" atlas-size="512" image-size="32">
-		<texture texture-x="0" texture-y="15" id="grass" />
-		<texture texture-x="1" texture-y="15" id="stone" />
-		<texture texture-x="2" texture-y="15" id="dirt-side" />
-		<texture texture-x="3" texture-y="15" id="dirt-grass-side" />
-		<texture texture-x="0" texture-y="14" id="stone-wall-side" />
-		<texture texture-x="1" texture-y="14" id="dirt-dark" />
-		<texture texture-x="2" texture-y="14" id="sand" />
-		<texture texture-x="3" texture-y="14" id="dirt-light" />
+		<texture texture-colum="0" texture-row="15" id="grass" />
+		<texture texture-colum="1" texture-row="15" id="stone" />
+		<texture texture-colum="2" texture-row="15" id="dirt-side" />
+		<texture texture-colum="3" texture-row="15" id="dirt-grass-side" />
+		<texture texture-colum="0" texture-row="14" id="stone-wall-side" />
+		<texture texture-colum="1" texture-row="14" id="dirt-dark" />
+		<texture texture-colum="2" texture-row="14" id="sand" />
+		<texture texture-colum="3" texture-row="14" id="dirt-light" />
+		<texture texture-colum="4" texture-row="11" id="grass-snow-side" />
+		<texture texture-colum="2" texture-row="11" id="snow" />
+		<texture texture-colum="13" texture-row="3" id="water" />
+		<texture texture-colum="13" texture-row="1" id="lava" />
 	</texture-atlas>
 </resources>

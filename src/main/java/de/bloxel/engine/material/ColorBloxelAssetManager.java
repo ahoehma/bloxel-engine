@@ -16,12 +16,10 @@
  *******************************************************************************/
 package de.bloxel.engine.material;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static java.lang.String.format;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -30,6 +28,7 @@ import java.util.Set;
 import org.springframework.core.io.ClassPathResource;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -59,10 +58,8 @@ public class ColorBloxelAssetManager implements BloxelAssetManager {
   private static final String COLORMAP_PROPERTIES = "colormap.properties";
   private static final Set<Integer> TRANSPARENT_BOXELS = Sets.newHashSet(7, 6);
 
-  private final Set<Integer> types = Sets.newHashSet();
   private final Map<MapKey, ColorRGBA> colormap = Maps.newHashMap();
   private final Map<MapKey, Material> colorcache = Maps.newHashMap();
-  private boolean wireframe;
   private final AssetManager assetManager;
 
   /**
@@ -83,7 +80,6 @@ public class ColorBloxelAssetManager implements BloxelAssetManager {
         final float g = Integer.valueOf(Iterables.get(rgb, 1));
         final float b = Integer.valueOf(Iterables.get(rgb, 2));
         colormap.put(new MapKey(bloxelType, -1), new ColorRGBA(r, g, b, 1f));
-        types.add(bloxelType);
       }
     } catch (final IOException e) {
       throw new RuntimeException(format("Can't load bloxel definition file '%s' from classpath", COLORMAP_PROPERTIES),
@@ -93,12 +89,7 @@ public class ColorBloxelAssetManager implements BloxelAssetManager {
   }
 
   @Override
-  public Set<Integer> getBloxelTypes() {
-    return types;
-  }
-
-  @Override
-  public Material getMaterial(final Integer bloxelType) {
+  public Material getMaterial(final Integer bloxelType, final BloxelSide face) {
     final MapKey key = new MapKey(bloxelType, -1);
     if (colorcache.containsKey(key)) {
       return colorcache.get(key);
@@ -115,20 +106,12 @@ public class ColorBloxelAssetManager implements BloxelAssetManager {
   }
 
   @Override
-  public List<Vector2f> getTextureCoordinates(final Integer bloxelType, final int face) {
-    return newArrayList(new Vector2f(0, 0), new Vector2f(1, 0), new Vector2f(0, 1), new Vector2f(1, 1));
+  public ImmutableList<Vector2f> getTextureCoordinates(final Integer bloxelType, final BloxelSide face) {
+    return ImmutableList.of(new Vector2f(0, 0), new Vector2f(1, 0), new Vector2f(0, 1), new Vector2f(1, 1));
   }
 
   @Override
   public boolean isTransparent(final Integer bloxelType) {
     return TRANSPARENT_BOXELS.contains(bloxelType);
-  }
-
-  public boolean isWireframe() {
-    return wireframe;
-  }
-
-  public void setWireframe(final boolean wireframe) {
-    this.wireframe = wireframe;
   }
 }

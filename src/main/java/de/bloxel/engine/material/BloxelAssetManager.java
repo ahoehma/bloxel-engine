@@ -12,7 +12,7 @@ import com.jme3.math.Vector2f;
  */
 public interface BloxelAssetManager {
 	
-  public static enum BloxelFace {
+  public static enum BloxelSide {
     UP, DOWN, LEFT, RIGHT, FRONT, BACK
   }
 
@@ -22,7 +22,7 @@ public interface BloxelAssetManager {
    * @param face
    * @return the material for the given type
    */
-  Material getMaterial(final Integer bloxelType, final BloxelFace face);
+  Material getMaterial(final Integer bloxelType, final BloxelSide face);
 
   /** 
    * Return the texture coordinates for a bloxel type and a face.
@@ -32,7 +32,7 @@ public interface BloxelAssetManager {
    * @param face
    * @return a list with four {@link Vector2f elements}
    */
-  ImmutableList<Vector2f> getTextureCoordinates(final Integer bloxelType, final BloxelFace face);
+  ImmutableList<Vector2f> getTextureCoordinates(final Integer bloxelType, final BloxelSide face);
 
   /**
    * @param bloxelType

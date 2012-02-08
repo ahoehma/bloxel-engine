@@ -27,13 +27,8 @@ import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
-import com.jme3.post.FilterPostProcessor;
-import com.jme3.post.ssao.SSAOFilter;
-import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Spatial;
 import com.jme3.shadow.PssmShadowRenderer;
-import com.jme3.shadow.PssmShadowRenderer.CompareMode;
-import com.jme3.shadow.PssmShadowRenderer.FilterMode;
 
 import de.bloxel.engine.data.Bloxel;
 import de.bloxel.engine.data.ColtVolumeFactory;
@@ -57,6 +52,7 @@ public class CubicMeshVolumeNodeTest extends SimpleApplication implements Action
   private ImageAtlasBloxelAssetManager bloxelAssetManager;
   private SpotLight spot;
   private Vector2f screenCenter;
+  private PssmShadowRenderer pssmRenderer;
 
   private void addMapping(final String name, final Trigger trigger) {
     getInputManager().addMapping(name, trigger);
@@ -66,6 +62,9 @@ public class CubicMeshVolumeNodeTest extends SimpleApplication implements Action
   private void fill(final VolumeGrid<Bloxel> grid) {
     rootNode.detachAllChildren();
     rootNode.attachChild(node(grid, 0, 0, 0));
+    rootNode.attachChild(node(grid, -1, 0, 0));
+    rootNode.attachChild(node(grid, -1, -1, 0));
+    rootNode.attachChild(node(grid, -1, -1, -1));
   }
 
   private AbstractVolumeNode node(final VolumeGrid<Bloxel> grid, final int x, final int y, final int z) {
@@ -74,7 +73,6 @@ public class CubicMeshVolumeNodeTest extends SimpleApplication implements Action
     volumeNode.calculate();
     volumeNode.update();
     volumeNode.debug(debug);
-    volumeNode.setShadowMode(ShadowMode.Cast);
     return volumeNode;
   }
 
@@ -102,7 +100,8 @@ public class CubicMeshVolumeNodeTest extends SimpleApplication implements Action
     spot.setSpotInnerAngle(5 * FastMath.DEG_TO_RAD);
     spot.setSpotOuterAngle(20 * FastMath.DEG_TO_RAD);
     spot.setPosition(cam.getLocation());
-    spot.setDirection(cam.getWorldCoordinates(screenCenter, 0).subtract(spot.getPosition()));
+    final Vector3f lightDirection = cam.getWorldCoordinates(screenCenter, 0).subtract(spot.getPosition());
+    spot.setDirection(lightDirection);
     spot.setColor(ColorRGBA.White.mult(2));
     rootNode.addLight(spot);
   }
@@ -123,19 +122,14 @@ public class CubicMeshVolumeNodeTest extends SimpleApplication implements Action
     cam.setFrustumFar(1000f);
     flyCam.setMoveSpeed(50);
     flyCam.setEnabled(true);
-    final FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
-    final SSAOFilter ssaoFilter = new SSAOFilter();
-    ssaoFilter.setEnabled(false);
-    fpp.addFilter(ssaoFilter);
-    viewPort.addProcessor(fpp);
-    final PssmShadowRenderer pssmRenderer = new PssmShadowRenderer(assetManager, 1024, 3);
-    pssmRenderer.setDirection(new Vector3f(-1, -1, -1).normalizeLocal());
-    pssmRenderer.setLambda(0.55f);
-    pssmRenderer.setShadowIntensity(0.6f);
-    pssmRenderer.setCompareMode(CompareMode.Software);
-    pssmRenderer.setFilterMode(FilterMode.Bilinear);
-    pssmRenderer.displayDebug();
-    viewPort.addProcessor(pssmRenderer);
+    // pssmRenderer = new PssmShadowRenderer(assetManager, 512, 1);
+    // pssmRenderer.setLambda(0.55f);
+    // pssmRenderer.setShadowIntensity(0.2f);
+    // pssmRenderer.setCompareMode(CompareMode.Hardware);
+    // pssmRenderer.setFilterMode(FilterMode.Bilinear);
+    // pssmRenderer.setDirection(new Vector3f(-1, -1, -1).normalizeLocal());
+    // pssmRenderer.displayDebug();
+    // viewPort.addProcessor(pssmRenderer);
     addMapping("lightning", new KeyTrigger(KeyInput.KEY_L));
     addMapping("smooth", new KeyTrigger(KeyInput.KEY_2));
     addMapping("debug", new KeyTrigger(KeyInput.KEY_SPACE));
@@ -146,6 +140,7 @@ public class CubicMeshVolumeNodeTest extends SimpleApplication implements Action
   public void simpleUpdate(final float tpf) {
     super.simpleUpdate(tpf);
     spot.setPosition(cam.getLocation());
-    spot.setDirection(cam.getWorldCoordinates(screenCenter, 0).subtract(spot.getPosition()));
+    final Vector3f lightDirection = cam.getWorldCoordinates(screenCenter, 0).subtract(spot.getPosition());
+    spot.setDirection(lightDirection.normalizeLocal());
   }
 }

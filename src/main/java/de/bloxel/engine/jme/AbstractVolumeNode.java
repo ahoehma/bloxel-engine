@@ -26,7 +26,7 @@ import de.bloxel.engine.material.BloxelAssetManager;
 public abstract class AbstractVolumeNode extends Node implements VolumeNode {
 
   static enum State {
-    DIRTY, CALCULATED, UP2DATE
+    DIRTY, NEEDUPDATE, UP2DATE
   }
 
   static final Vector3f NORMAL_UP = new Vector3f(0, 1, 0);
@@ -67,7 +67,7 @@ public abstract class AbstractVolumeNode extends Node implements VolumeNode {
     final long startTime = System.currentTimeMillis();
     geometries.clear();
     geometries.addAll(createGeometries(grid, volume));
-    state = State.CALCULATED;
+    state = State.NEEDUPDATE;
     final float duration = System.currentTimeMillis() - startTime;
     LOG.debug("Calculate time was " + duration + "ms");
     return true;
@@ -99,13 +99,11 @@ public abstract class AbstractVolumeNode extends Node implements VolumeNode {
     }
   }
 
-  /**
-   * Update the geometries if necessary.
-   */
-  public void update() {
-    if (state != State.CALCULATED) {
-      LOG.debug(String.format("'%s' is not calculate - skip update", this));
-      return;
+  @Override
+  public boolean update() {
+    if (state != State.NEEDUPDATE) {
+      LOG.debug(String.format("'%s' need no update", this));
+      return false;
     }
     LOG.debug(String.format("Update geometries for '%s'", this));
     final long startTime = System.currentTimeMillis();
@@ -116,5 +114,6 @@ public abstract class AbstractVolumeNode extends Node implements VolumeNode {
     state = State.UP2DATE;
     final float duration = System.currentTimeMillis() - startTime;
     LOG.debug("Update time was " + duration + "ms");
+    return true;
   }
 }

@@ -18,32 +18,12 @@ package de.bloxel.engine.data;
 
 import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Objects.toStringHelper;
-import static com.google.common.collect.Lists.newArrayList;
+import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.format;
-
-import java.util.List;
-
 import cern.colt.matrix.ObjectFactory3D;
 import cern.colt.matrix.ObjectMatrix3D;
 
-import com.google.common.base.Preconditions;
-
 public class ColtVolume<T> implements Volume<T> {
-
-  public static <T extends Bloxel> List<T> getLeafs(final ColtVolume<T> o) {
-    final List<T> result = newArrayList();
-    for (int slices = 0; slices < o.matrix3d.slices(); slices++) {
-      for (int rows = 0; rows < o.matrix3d.rows(); rows++) {
-        for (int columns = 0; columns < o.matrix3d.columns(); columns++) {
-          final T element = (T) o.matrix3d.get(slices, rows, columns);
-          if (element != null) {
-            result.add(element);
-          }
-        }
-      }
-    }
-    return result;
-  }
 
   private ObjectMatrix3D matrix3d;
   private final int x;
@@ -76,15 +56,14 @@ public class ColtVolume<T> implements Volume<T> {
     matrix3d = ObjectFactory3D.sparse.make(sizeX, sizeY, sizeZ);
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public T get(final int x, final int y, final int z) {
-    Preconditions.checkArgument(x >= 0);
-    Preconditions.checkArgument(y >= 0);
-    Preconditions.checkArgument(z >= 0);
-    Preconditions.checkArgument(x < sizeX);
-    Preconditions.checkArgument(y < sizeY);
-    Preconditions.checkArgument(z < sizeZ, format("error: %d < %d", z, sizeZ));
+    checkArgument(x >= 0);
+    checkArgument(y >= 0);
+    checkArgument(z >= 0);
+    checkArgument(x < sizeX, format("x must be lower then size-x %d but was %d", sizeX, x));
+    checkArgument(y < sizeY, format("y must be lower then size-y %d but was %d", sizeY, y));
+    checkArgument(z < sizeZ, format("z must be lower then size-z %d but was %d", sizeZ, z));
     return (T) firstNonNull(matrix3d.get(x, y, z), Bloxel.AIR);
   }
 
@@ -120,12 +99,12 @@ public class ColtVolume<T> implements Volume<T> {
 
   @Override
   public void set(final int x, final int y, final int z, final T bloxel) {
-    Preconditions.checkArgument(x >= 0);
-    Preconditions.checkArgument(y >= 0);
-    Preconditions.checkArgument(z >= 0);
-    Preconditions.checkArgument(x < sizeX);
-    Preconditions.checkArgument(y < sizeY);
-    Preconditions.checkArgument(z < sizeZ);
+    checkArgument(x >= 0);
+    checkArgument(y >= 0);
+    checkArgument(z >= 0);
+    checkArgument(x < sizeX, format("x must be lower then size-x %d but was %d", sizeX, x));
+    checkArgument(y < sizeY, format("y must be lower then size-y %d but was %d", sizeY, y));
+    checkArgument(z < sizeZ, format("z must be lower then size-z %d but was %d", sizeZ, z));
     matrix3d.set(x, y, z, bloxel);
   }
 

@@ -30,6 +30,10 @@
   <category name="de.bloxel.engine.resources">
     <priority value="debug" />
   </category>
+  
+  <category name="de.bloxel.engine.data.VolumeGrid">
+    <priority value="debug" />
+  </category>
 
   <root>
     <priority value="error" />

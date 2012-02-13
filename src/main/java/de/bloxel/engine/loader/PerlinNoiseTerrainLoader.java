@@ -17,9 +17,9 @@ public class PerlinNoiseTerrainLoader implements BloxelLoader {
     final int xv = volume.getX();
     final int yv = volume.getY();
     final int zv = volume.getZ();
-    for (int z = 0; z <= volume.getSizeZ() - 1; z++) {
-      for (int y = 0; y <= volume.getSizeY() - 1; y++) {
-        for (int x = 0; x <= volume.getSizeX() - 1; x++) {
+    for (int z = 0; z < volume.getSizeZ(); z++) {
+      for (int y = 0; y < volume.getSizeY(); y++) {
+        for (int x = 0; x < volume.getSizeX(); x++) {
           final float xf = (xv + x + 512) / 1024f;
           final float yf = (yv + y + 512) / 1024f;
           final float zf = (zv + z + 512) / 1024f;

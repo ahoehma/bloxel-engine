@@ -14,7 +14,9 @@
  * limitations under the License.
  * 
  *******************************************************************************/
-package de.bloxel.engine.jme;
+package de.bloxel.engine;
+
+import static java.lang.String.format;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,6 +30,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 import cave3d.CaveScalarField;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.font.BitmapText;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
@@ -44,6 +47,10 @@ import de.bloxel.engine.concurrent.VolumeNodeUpdater;
 import de.bloxel.engine.data.Bloxel;
 import de.bloxel.engine.data.ColtVolumeFactory;
 import de.bloxel.engine.data.VolumeGrid;
+import de.bloxel.engine.jme.AbstractVolumeNode;
+import de.bloxel.engine.jme.CubicMeshVolumeNode;
+import de.bloxel.engine.loader.BlockmaniaTerrainLoader;
+import de.bloxel.engine.loader.PerlinNoiseTerrainLoader;
 import de.bloxel.engine.loader.ScalarFieldTerrainLoader;
 import de.bloxel.engine.material.ImageAtlasBloxelAssetManager;
 
@@ -51,7 +58,7 @@ import de.bloxel.engine.material.ImageAtlasBloxelAssetManager;
  * @author Andreas Höhmann
  * @since 1.0.0
  */
-public class CubicMeshVolumeNodeTest extends SimpleApplication implements ActionListener {
+public class BloxelEngineTest extends SimpleApplication implements ActionListener {
 
   static {
     final java.util.logging.Logger rootLogger = LogManager.getLogManager().getLogger("");
@@ -63,9 +70,10 @@ public class CubicMeshVolumeNodeTest extends SimpleApplication implements Action
   }
 
   public static void main(final String[] args) {
-    new CubicMeshVolumeNodeTest().start();
+    new BloxelEngineTest().start();
   }
 
+  private BitmapText volumeDebug;
   private boolean debug;
   private boolean lightning = false;
   private VolumeGrid<Bloxel> grid;
@@ -89,7 +97,8 @@ public class CubicMeshVolumeNodeTest extends SimpleApplication implements Action
   }
 
   private AbstractVolumeNode node(final VolumeGrid<Bloxel> grid, final int x, final int y, final int z) {
-    return new CubicMeshVolumeNode(grid, grid.getVolume(x, y, z), assetManager, bloxelAssetManager);
+    return new CubicMeshVolumeNode(grid, grid.getVolumeWithIndex(x, y, z), assetManager, bloxelAssetManager);
+    // return new SmoothSurfaceVolumeNode(grid, grid.getVolumeWithIndex(x, y, z), assetManager, bloxelAssetManager);
   }
 
   @Override
@@ -133,11 +142,9 @@ public class CubicMeshVolumeNodeTest extends SimpleApplication implements Action
     grid = new VolumeGrid<Bloxel>();
     grid.setGridSize(32, 32, 32);
     grid.setVolumeSize(16);
-    // grid.setVolumeLoader(new PerlinNoiseTerrainLoader());
-    // grid.setVolumeLoader(new BlockmaniaTerrainLoader("cPpCzKqBpVkQpVjP"));
-    // grid.setVolumeLoader(new RandomLoader());
-    final CaveScalarField scalarField = new CaveScalarField("jme".hashCode(), 128f, 1f);
-    grid.setVolumeLoader(new ScalarFieldTerrainLoader(scalarField));
+    grid.setVolumeLoader(new PerlinNoiseTerrainLoader());
+    grid.setVolumeLoader(new ScalarFieldTerrainLoader(new CaveScalarField("jme".hashCode(), 128f, 2f)));
+    grid.setVolumeLoader(new BlockmaniaTerrainLoader("jme".hashCode()));
     grid.setVolumeFactory(new ColtVolumeFactory<Bloxel>());
     grid.init();
     cam.setLocation(Vector3f.ZERO.add(0, 0, 50));
@@ -148,8 +155,8 @@ public class CubicMeshVolumeNodeTest extends SimpleApplication implements Action
     addMapping("debug", new KeyTrigger(KeyInput.KEY_SPACE));
     setupLighting();
     threadPool.execute(new VolumeNodeUpdater<AbstractVolumeNode>(input, output));
-    threadPool.execute(new VolumeNodeUpdater<AbstractVolumeNode>(input, output));
-    threadPool.execute(new VolumeNodeUpdater<AbstractVolumeNode>(input, output));
+    // threadPool.execute(new VolumeNodeUpdater<AbstractVolumeNode>(input, output));
+    // threadPool.execute(new VolumeNodeUpdater<AbstractVolumeNode>(input, output));
     // threadPool.execute(new VolumeNodeUpdater<AbstractVolumeNode>(input, output));
     // threadPool.execute(new VolumeNodeUpdater<AbstractVolumeNode>(input, output));
     // threadPool.execute(new VolumeNodeUpdater<AbstractVolumeNode>(input, output));
@@ -158,20 +165,30 @@ public class CubicMeshVolumeNodeTest extends SimpleApplication implements Action
 
       @Override
       public void run() {
-        final int min = -8;
-        final int max = 8;
-        for (int y = min; y <= max; y++) {
-          for (int z = min; z <= max; z++) {
-            for (int x = min; x <= max; x++) {
-              try {
-                input.put(node(grid, x, y, z));
-              } catch (final InterruptedException e) {
-              }
-            }
-          }
+        try {
+          input.put(node(grid, 0, 1, 2));
+          input.put(node(grid, 1, 1, 2));
+          // input.put(node(grid, 2, 1, 2));
+        } catch (final InterruptedException e) {
+          // TODO: handle exception
         }
+        // final int min = -2;
+        // final int max = 2;
+        // for (int y = min; y <= max; y++) {
+        // for (int z = min; z <= max; z++) {
+        // for (int x = min; x <= max; x++) {
+        // try {
+        // input.put(node(grid, x, y, z));
+        // } catch (final InterruptedException e) {
+        // }
+        // }
+        // }
+        // }
       }
     });
+    volumeDebug = new BitmapText(guiFont, false);
+    volumeDebug.setLocalTranslation(250, volumeDebug.getLineHeight(), 0);
+    guiNode.attachChild(volumeDebug);
   }
 
   @Override
@@ -186,5 +203,7 @@ public class CubicMeshVolumeNodeTest extends SimpleApplication implements Action
         rootNode.attachChild(n);
       }
     }
+    volumeDebug.setText(format("volume: %s",
+        grid.getVolumeForWorldPosition(cam.getLocation().x, cam.getLocation().y, cam.getLocation().z)));
   }
 }

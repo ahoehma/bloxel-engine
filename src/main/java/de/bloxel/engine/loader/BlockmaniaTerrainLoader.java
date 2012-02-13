@@ -32,10 +32,6 @@ import de.bloxel.engine.math.PerlinNoise;
  */
 public class BlockmaniaTerrainLoader implements Loader<Bloxel> {
 
-  private static final Bloxel STONE = new Bloxel(4);
-  private static final Bloxel WATER = new Bloxel(6);
-  private static final Bloxel LAVA = new Bloxel(7);
-
   private static final Logger LOG = Logger.getLogger(BlockmaniaTerrainLoader.class);
 
   private static final int SAMPLE_RATE_3D_HOR = 8; // 8->16
@@ -62,11 +58,11 @@ public class BlockmaniaTerrainLoader implements Loader<Bloxel> {
 
   private final PerlinNoise _pGen4;
 
-  public BlockmaniaTerrainLoader(final String seed) {
-    _pGen1 = new PerlinNoise(seed.hashCode());
-    _pGen2 = new PerlinNoise(seed.hashCode() + 1);
-    _pGen3 = new PerlinNoise(seed.hashCode() + 2);
-    _pGen4 = new PerlinNoise(seed.hashCode() + 3);
+  public BlockmaniaTerrainLoader(final int seed) {
+    _pGen1 = new PerlinNoise(seed);
+    _pGen2 = new PerlinNoise(seed + 1);
+    _pGen3 = new PerlinNoise(seed + 2);
+    _pGen4 = new PerlinNoise(seed + 3);
   }
 
   float calcDensity(final float x, final float y, final float z) {
@@ -193,9 +189,9 @@ public class BlockmaniaTerrainLoader implements Loader<Bloxel> {
         float firstBlockHeight = -1;
         for (int y = sizeY - 1; y >= 0; y--) {
           // local to global location mapping
-          final int globalX = vx + x - 1;
-          final int globalY = vy + y - 1;
-          final int globalZ = vz + z - 1;
+          final int globalX = vx + x;
+          final int globalY = vy + y;
+          final int globalZ = vz + z;
           // some density independent rules ...
           if (globalY <= 0) {
             // Stone ground layer with caves
@@ -203,13 +199,13 @@ public class BlockmaniaTerrainLoader implements Loader<Bloxel> {
             caveNoise += _pGen4.noise(globalX * 0.04f, globalY * 0.04f, globalZ * 0.04f) * 0.15f;
             caveNoise += _pGen4.noise(globalX * 0.08f, globalY * 0.08f, globalZ * 0.08f) * 0.05f;
             if (caveNoise > 0.24f) {
-              volume.set(x, y, z, STONE);
+              volume.set(x, y, z, new Bloxel(4, 0));
             }
             continue;
           }
           if (globalY < WATER_LEVEL_Y && globalY > 0) {
             // Ocean
-            volume.set(x, y, z, WATER);
+            volume.set(x, y, z, new Bloxel(6));
           }
           // perlin noise based rules ...
           if (!densityDataInitialized) {
@@ -224,7 +220,7 @@ public class BlockmaniaTerrainLoader implements Loader<Bloxel> {
               // Generate lakes
               final float lakeIntensity = calcLakeIntensity(x + vx, z + vy);
               if (lakeIntensity < 0.1) {
-                volume.set(x, y, z, LAVA);
+                volume.set(x, y, z, new Bloxel(7, dens));
               }
               firstBlockHeight = globalY;
             } else {

@@ -134,15 +134,18 @@ public class CubicMeshVolumeNode extends AbstractVolumeNode {
     if ((faces & FACE_NO) > 0) {
       return false;
     }
+    final float zdelta = 1f;
+    final float xdelta = 1f;
+    final float ydelta = 1f;
     final int bloxelType = data.getType();
-    final Vector3f pa = new Vector3f(x, y, z + 1);
-    final Vector3f pb = new Vector3f(x + 1, y, z + 1);
-    final Vector3f pc = new Vector3f(x, y + 1, z + 1);
-    final Vector3f pd = new Vector3f(x + 1, y + 1, z + 1);
+    final Vector3f pa = new Vector3f(x, y, z + zdelta);
+    final Vector3f pb = new Vector3f(x + xdelta, y, z + zdelta);
+    final Vector3f pc = new Vector3f(x, y + ydelta, z + zdelta);
+    final Vector3f pd = new Vector3f(x + xdelta, y + ydelta, z + zdelta);
     final Vector3f pe = new Vector3f(x, y, z);
-    final Vector3f pf = new Vector3f(x + 1, y, z);
-    final Vector3f pg = new Vector3f(x, y + 1, z);
-    final Vector3f ph = new Vector3f(x + 1, y + 1, z);
+    final Vector3f pf = new Vector3f(x + xdelta, y, z);
+    final Vector3f pg = new Vector3f(x, y + ydelta, z);
+    final Vector3f ph = new Vector3f(x + xdelta, y + ydelta, z);
     boolean materialUsed = false;
     if ((faces & FACE_BACK) > 0) {
       final int verticesSize = vertices.get(bloxelType).size();
@@ -201,9 +204,9 @@ public class CubicMeshVolumeNode extends AbstractVolumeNode {
     clear();
     int c = 0;
     final Set<Integer> usedBloxeTypes = Sets.newHashSet();
-    for (int x = 0; x < volume.getSizeX() - 1; x++) {
-      for (int z = 0; z < volume.getSizeZ() - 1; z++) {
-        for (int y = 0; y < volume.getSizeY() - 1; y++) {
+    for (int x = 0; x < volume.getSizeX(); x++) {
+      for (int z = 0; z < volume.getSizeZ(); z++) {
+        for (int y = 0; y < volume.getSizeY(); y++) {
           final Bloxel data = volume.get(x, y, z);
           Preconditions.checkNotNull(data);
           if (data == Bloxel.AIR) {
@@ -251,7 +254,7 @@ public class CubicMeshVolumeNode extends AbstractVolumeNode {
   }
 
   private boolean isTranslucentBloxel(final Bloxel checkBloxel) {
-    return bloxelAssetManager.isTransparent(checkBloxel.getType());
+    return checkBloxel == Bloxel.AIR || bloxelAssetManager.isTransparent(checkBloxel.getType());
   }
 
   /**
@@ -262,19 +265,23 @@ public class CubicMeshVolumeNode extends AbstractVolumeNode {
   private boolean needFace(final Bloxel currentBloxel, final Bloxel neighborBloxel) {
     checkNotNull(currentBloxel);
     checkNotNull(neighborBloxel);
-    checkArgument(currentBloxel != neighborBloxel);
-    if (currentBloxel.getType() != neighborBloxel.getType()) {
-      return true;
+    checkArgument(currentBloxel != Bloxel.AIR);
+    if (currentBloxel.getType() == neighborBloxel.getType()) {
+      // same type
+      return false;
     }
-    if (neighborBloxel == Bloxel.AIR) {
-      // neighbor bloxel is air then it doesn't matter if current bloxel is translucent we always need a face here
-      return true;
-    }
+    // if (neighborBloxel == Bloxel.AIR) {
+    // // neighbor bloxel is air then it doesn't matter if current bloxel is translucent we always need a face here
+    // return true;
+    // }
     if (isTranslucentBloxel(currentBloxel)) {
       // current bloxel is translucent
+      if (isTranslucentBloxel(neighborBloxel)) {
+        // we need a face if the neighbor bloxel is also translucent but with a different type
+        return currentBloxel.getType() != neighborBloxel.getType();
+      }
       // we need a face if the neighbor bloxel is not translucent
-      // we need a face if the neighbor bloxel is also translucent but with a different type
-      return !isTranslucentBloxel(neighborBloxel) || currentBloxel.getType() != neighborBloxel.getType();
+      return true;
     }
     // normal current bloxel
     // we need a face if the neighbor bloxel is translucent
@@ -305,16 +312,26 @@ public class CubicMeshVolumeNode extends AbstractVolumeNode {
     final int gy = v.getY() + y;
     final int gz = v.getZ() + z;
     if (x < 0 || x >= v.getSizeX()) {
-      return needFace(currentBloxel, grid.get(gx, gy, gz));
+      System.out.println(String.format("x out of volume: %d,%d,%d->%d,%d,%d", x, y, z, gx, gy, gz));
+      final Bloxel bloxel = grid.get(gx, gy, gz);
+      if (currentBloxel.getType() != bloxel.getType()) {
+        return true;
+      }
+      System.out.println("current:" + currentBloxel + " / " + v);
+      System.out.println("neigbor:" + bloxel + " / " + grid.getVolumeForWorldPosition(gx, gy, gz));
+      return false;
     }
     if (y < 0 || y >= v.getSizeY()) {
-      return needFace(currentBloxel, grid.get(gx, gy, gz));
+      // System.out.println("y out of volume");
+      // return needFace(currentBloxel, grid.get(gx, gy, gz));
+      return false;
     }
     if (z < 0 || z >= v.getSizeZ()) {
-      return needFace(currentBloxel, grid.get(gx, gy, gz));
+      // System.out.println("z out of volume");
+      // return needFace(currentBloxel, grid.get(gx, gy, gz));
+      return false;
     }
     return needFace(currentBloxel, v.get(x, y, z));
-    // System.out.println(String.format("[%d,%d,%d] %s<-%s->%s", gx, gy, gz, currentBloxel, result, neighborBloxel));
   }
 
   private ArrayList<Integer> verticesIndex(final int verticesSize, final ArrayList<Integer> indexes) {

@@ -15,6 +15,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
+import com.jme3.material.RenderState.FaceCullMode;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
@@ -23,6 +24,7 @@ import de.bloxel.engine.data.Bloxel;
 import de.bloxel.engine.data.Volume;
 import de.bloxel.engine.data.VolumeGrid;
 import de.bloxel.engine.material.BloxelAssetManager;
+import de.bloxel.engine.material.BloxelAssetManager.BloxelSide;
 import de.bloxel.engine.math.Vertex;
 
 /**
@@ -996,9 +998,9 @@ public class SmoothSurfaceVolumeNode extends AbstractVolumeNode {
     mesh.clear();
     int c = 0;
     final Set<Integer> usedBloxeTypes = Sets.newHashSet();
-    for (int x = 1; x < volume.getSizeX() - 1; x++) {
-      for (int z = 1; z < volume.getSizeZ() - 1; z++) {
-        for (int y = 1; y < volume.getSizeY() - 1; y++) {
+    for (int x = 0; x < volume.getSizeX(); x++) {
+      for (int z = 0; z < volume.getSizeZ(); z++) {
+        for (int y = 0; y < volume.getSizeY(); y++) {
           final Bloxel data = volume.get(x, y, z);
           Preconditions.checkNotNull(data);
           if (data == Bloxel.AIR) {
@@ -1007,13 +1009,17 @@ public class SmoothSurfaceVolumeNode extends AbstractVolumeNode {
           if (mesh.get(data.getType()) == null) {
             mesh.put(data.getType(), new SurfaceMesh());
           }
-          if (mode == Mode.MARCHING_CUBES) {
-            vMarchCube1(grid, volume, data, x, y, z, 0);
-          } else if (mode == Mode.MARCHING_TETRAHEDRON) {
+          switch (mode) {
+          case MARCHING_CUBES:
+            if (vMarchCube1(grid, volume, data, x, y, z, 0)) {
+              c++;
+              usedBloxeTypes.add(data.getType());
+            }
+            break;
+          case MARCHING_TETRAHEDRON:
             vMarchCube2(grid, volume, data, x, y, z, 0);
+            break;
           }
-          c++;
-          usedBloxeTypes.add(data.getType());
         }
       }
     }
@@ -1022,45 +1028,58 @@ public class SmoothSurfaceVolumeNode extends AbstractVolumeNode {
     for (final Integer bloxelType : usedBloxeTypes) {
       LOG.debug("Build mesh for material " + bloxelType + " ...");
       final Material material = bloxelAssetManager.getMaterial(bloxelType, null);
+      material.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
       final Geometry geometry = geometry("bloxel-" + 1).mesh(mesh.get(bloxelType).createMesh()).material(material)
           .get();
       if (material.isTransparent()) {
         geometry.setQueueBucket(Transparent);
       }
+      geometry.setLocalTranslation(new Vector3f(volume.getX(), volume.getY(), volume.getZ()));
       result.add(geometry);
     }
     mesh.clear();
     return result;
   }
 
+  private Bloxel getBloxel(final VolumeGrid<Bloxel> grid, final Volume<Bloxel> v, final int x, final int y, final int z) {
+    final int gx = v.getX() + x;
+    final int gy = v.getY() + y;
+    final int gz = v.getZ() + z;
+    if (x < 0 || x >= v.getSizeX() || y < 0 || y >= v.getSizeY() || z < 0 || z >= v.getSizeZ()) {
+      return grid.get(gx, gy, gz);
+    }
+    return v.get(x, y, z);
+  }
+
   public void setMode(final Mode mode) {
     this.mode = mode;
   }
 
-  private void vMarchCube1(final VolumeGrid<Bloxel> grid, final Volume<Bloxel> volume, final Bloxel data, final int fX,
-      final int fY, final int fZ, final float isoLevel) {
-    int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
+  private boolean vMarchCube1(final VolumeGrid<Bloxel> grid, final Volume<Bloxel> volume, final Bloxel data,
+      final int fX, final int fY, final int fZ, final float isoLevel) {
+    int iCorner, iVertex;
+    int iEdge, iTriangle, iFlagIndex, iEdgeFlags;
     float fOffset;
     final float[] afCubeValue = new float[8];
     final Vector3f[] asEdgeVertex = new Vector3f[12];
-    // Make a local copy of the values at the cube's corners
-    for (iVertex = 0; iVertex < 8; iVertex++) {
-      afCubeValue[iVertex] = volume.get((int) (fX + a2fVertexOffset[iVertex][0]),
-          (int) (fY + a2fVertexOffset[iVertex][1]), (int) (fZ + a2fVertexOffset[iVertex][2])).getDensity();
-    }
     // Find which vertices are inside of the surface and which are outside
     iFlagIndex = 0;
-    for (iVertexTest = 0; iVertexTest < 8; iVertexTest++) {
-      if (afCubeValue[iVertexTest] <= isoLevel) {
-        iFlagIndex |= 1 << iVertexTest;
+    // Make a local copy of the values at the cube's corners
+    for (iVertex = 0; iVertex < 8; iVertex++) {
+      final int xv = (int) (fX + a2fVertexOffset[iVertex][0]);
+      final int yv = (int) (fY + a2fVertexOffset[iVertex][1]);
+      final int zv = (int) (fZ + a2fVertexOffset[iVertex][2]);
+      final Bloxel b = getBloxel(grid, volume, xv, yv, zv);
+      afCubeValue[iVertex] = b.getDensity();
+      if (afCubeValue[iVertex] <= isoLevel) {
+        iFlagIndex |= 1 << iVertex;
       }
     }
     // Find which edges are intersected by the surface
     iEdgeFlags = aiCubeEdgeFlags[iFlagIndex];
-    // If the cube is entirely inside or outside of the surface, then there
-    // will be no intersections
+    // If the cube is entirely inside or outside of the surface, then there will be no intersections
     if (iEdgeFlags == 0) {
-      return;
+      return false;
     }
     // Find the point of intersection of the surface with each edge
     // Then find the normal to the surface at those points
@@ -1096,12 +1115,13 @@ public class SmoothSurfaceVolumeNode extends AbstractVolumeNode {
       vert[0].normal = normal;
       vert[1].normal = normal;
       vert[2].normal = normal;
-      final List<Vector2f> textureCoordinates = bloxelAssetManager.getTextureCoordinates(1, null);
+      final List<Vector2f> textureCoordinates = bloxelAssetManager.getTextureCoordinates(data.getType(), BloxelSide.UP);
       vert[0].texCoord = textureCoordinates.get(0);
       vert[1].texCoord = textureCoordinates.get(1);
       vert[2].texCoord = textureCoordinates.get(2);
       mesh.get(data.getType()).addTriangle(index[0], index[1], index[2]);
     }
+    return true;
   }
 
   private void vMarchCube2(final VolumeGrid<Bloxel> grid, final Volume<Bloxel> volume, final Bloxel data, final int fX,
@@ -1120,8 +1140,11 @@ public class SmoothSurfaceVolumeNode extends AbstractVolumeNode {
     }
     // Make a local copy of the cube's corner values
     for (iVertex = 0; iVertex < 8; iVertex++) {
-      afCubeValue[iVertex] = volume.get((int) asCubePosition[iVertex].x, (int) asCubePosition[iVertex].y,
-          (int) asCubePosition[iVertex].z).getDensity();
+      final int xv = (int) asCubePosition[iVertex].x;
+      final int yv = (int) asCubePosition[iVertex].y;
+      final int zv = (int) asCubePosition[iVertex].z;
+      final Bloxel b = getBloxel(grid, volume, xv, yv, zv);
+      afCubeValue[iVertex] = b.getDensity();
     }
     for (iTetrahedron = 0; iTetrahedron < 6; iTetrahedron++) {
       for (iVertex = 0; iVertex < 4; iVertex++) {
@@ -1132,12 +1155,12 @@ public class SmoothSurfaceVolumeNode extends AbstractVolumeNode {
         asTetrahedronPosition[iVertex].z = asCubePosition[iVertexInACube].z;
         afTetrahedronValue[iVertex] = afCubeValue[iVertexInACube];
       }
-      vMarchTetrahedron(asTetrahedronPosition, afTetrahedronValue, isoLevel, mesh.get(data.getType()));
+      vMarchTetrahedron(data, asTetrahedronPosition, afTetrahedronValue, isoLevel, mesh.get(data.getType()));
     }
   }
 
-  private void vMarchTetrahedron(final Vector3f[] pasTetrahedronPosition, final float[] pafTetrahedronValue,
-      final float isoLevel, final SurfaceMesh surfaceMesh) {
+  private void vMarchTetrahedron(final Bloxel data, final Vector3f[] pasTetrahedronPosition,
+      final float[] pafTetrahedronValue, final float isoLevel, final SurfaceMesh surfaceMesh) {
     int iEdge, iVert0, iVert1, iEdgeFlags, iTriangle, iCorner, iVertex, iFlagIndex = 0;
     float fOffset, fInvOffset;
     final Vector3f[] asEdgeVertex = new Vector3f[6];
@@ -1189,7 +1212,7 @@ public class SmoothSurfaceVolumeNode extends AbstractVolumeNode {
       vert[0].normal = normal;
       vert[1].normal = normal;
       vert[2].normal = normal;
-      final List<Vector2f> textureCoordinates = bloxelAssetManager.getTextureCoordinates(1, null);
+      final List<Vector2f> textureCoordinates = bloxelAssetManager.getTextureCoordinates(data.getType(), BloxelSide.UP);
       vert[0].texCoord = textureCoordinates.get(0);
       vert[1].texCoord = textureCoordinates.get(1);
       vert[2].texCoord = textureCoordinates.get(2);

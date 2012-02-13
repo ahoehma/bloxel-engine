@@ -36,7 +36,6 @@ import com.jme3.asset.AssetManager;
 import com.jme3.asset.plugins.ClasspathLocator;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState.BlendMode;
-import com.jme3.material.RenderState.FaceCullMode;
 import com.jme3.math.Vector2f;
 import com.jme3.texture.Texture;
 
@@ -147,8 +146,6 @@ public class ImageAtlasBloxelAssetManager implements BloxelAssetManager {
       final Material material = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
       material.setTexture("DiffuseMap", texture);
       material.setBoolean("SeparateTexCoord", true);
-      // material.setBoolean("VertexLighting", true); // need to avoid shader error! "missing vNormal" ?!
-      material.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Back);
       return material;
     }
     final Material material = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");

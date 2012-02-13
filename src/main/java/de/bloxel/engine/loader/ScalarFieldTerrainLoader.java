@@ -25,17 +25,15 @@ public class ScalarFieldTerrainLoader implements BloxelLoader {
     final int xv = volume.getX();
     final int yv = volume.getY();
     final int zv = volume.getZ();
-    for (int z = 0; z <= volume.getSizeZ() - 1; z++) {
-      for (int y = 0; y <= volume.getSizeY() - 1; y++) {
-        for (int x = 0; x <= volume.getSizeX() - 1; x++) {
+    for (int z = 0; z < volume.getSizeZ(); z++) {
+      for (int y = 0; y < volume.getSizeY(); y++) {
+        for (int x = 0; x < volume.getSizeX(); x++) {
           final float xf = xv + x;
           final float yf = yv + y;
           final float zf = zv + z;
           final float density = scalarField.calculate(new Vector3f(xf, yf, zf));
-          // System.out.println(String.format("%d,%d,%d=>%d,%d,%d=%f,%f,%f=%f", xv, yv, zv, x, y, z, xf, yf, zf,
-          // density));
           if (density > 0) {
-            volume.set(x, y, z, new Bloxel(1, density));
+            volume.set(x, y, z, new Bloxel(z % 7 + 1, density));
           }
         }
       }

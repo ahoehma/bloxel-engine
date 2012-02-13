@@ -81,7 +81,7 @@ public class VolumeGrid<T> {
   private Range<Integer> rangeZ;
 
   public T get(final float x, final float y, final float z) {
-    final Volume<T> volume = getVolume(x, y, z);
+    final Volume<T> volume = getVolumeForWorldPosition(x, y, z);
     final int vx = (int) Math.abs(x - volume.getX() - 1);
     final int vy = (int) Math.abs(y - volume.getY() - 1);
     final int vz = (int) Math.abs(z - volume.getZ() - 1);
@@ -90,16 +90,16 @@ public class VolumeGrid<T> {
     return volume.get(vx, vy, vz);
   }
 
-  public Volume<T> getVolume(final float x, final float y, final float z) {
+  public Volume<T> getVolumeForWorldPosition(final float x, final float y, final float z) {
     final int vx = (int) (x / volumeSize) - (x < 0 ? 1 : 0);
     final int vy = (int) (y / volumeSize) - (y < 0 ? 1 : 0);
     final int vz = (int) (z / volumeSize) - (z < 0 ? 1 : 0);
     LOG.trace(format("Transform global position (x:%f,y:%f,z:%f) into local volume position (x:%d,y:%d,z:%d)", x, y, z,
         vx, vy, vz));
-    return getVolume(vx, vy, vz);
+    return getVolumeWithIndex(vx, vy, vz);
   }
 
-  public Volume<T> getVolume(final int x, final int y, final int z) {
+  public synchronized Volume<T> getVolumeWithIndex(final int x, final int y, final int z) {
     checkArgument(rangeX.contains(x), format("volume position x %d must be in range %s", x, rangeX));
     checkArgument(rangeY.contains(y), format("volume position y %d must be in range %s", y, rangeY));
     checkArgument(rangeZ.contains(z), format("volume position z %d must be in range %s", z, rangeZ));
